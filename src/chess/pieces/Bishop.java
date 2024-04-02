@@ -23,12 +23,10 @@ public class Bishop extends ChessPiece {
 
     @Override
     public boolean isLegalMove(ChessBoard.Position newPosition) {
-        if (!newPosition.isOnBoard()) return false;
-
-        if (!getBoard().isEmpty(newPosition)
-                && this.isSameColor(getBoard().getPiece(newPosition))) return false;
-
-        if (!newPosition.onDiagonal(this.getPosition())) return false;
+        if (!(
+            isLegalMoveCommon(newPosition) &&
+            newPosition.onDiagonal(this.getPosition())
+        )) return false;
 
         return !isBlocked(newPosition);
     }

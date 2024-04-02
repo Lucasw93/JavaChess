@@ -25,22 +25,12 @@ public class Queen extends ChessPiece {
 
     @Override
     public boolean isLegalMove(ChessBoard.Position newPosition) {
-        if (!isLegalMoveCommon(newPosition)) return false;
+        if (!(
+            isLegalMoveCommon(newPosition) &&
+            (this.getPosition().onDiagonal(newPosition) ||
+                    this.getPosition().sameRowOrCol(newPosition))
+        )) return false;
 
-        if (!(newPosition.onDiagonal(this.getPosition())
-                || newPosition.sameRowOrCol(this.getPosition()))) return false;
-
-        int dRow = Integer.compare(newPosition.row(), this.getRow());
-        int dCol = Integer.compare(newPosition.col(), this.getCol());
-
-        int curRow = this.getRow() + dRow;
-        int curCol = this.getCol() + dCol;
-
-        while (!newPosition.equals(curRow, curCol)) {
-            if (getBoard().getPiece(curRow, curCol) != null) return false;
-            curRow += dRow;
-            curCol += dCol;
-        }
-        return true;
+        return !isBlocked(newPosition);
     }
 }

@@ -29,18 +29,6 @@ public class King extends ChessPiece {
     public List<ChessBoard.Position> getLegalMoves() {
         return Arrays.stream(possibleKingMoves()).filter(this::isLegalMoveCommon).toList();
     }
-//
-//    @Override
-//    public List<ChessBoard.Position> getLegalMoves() {
-//        List<ChessBoard.Position> ret = new ArrayList<>();
-//        for (int row = 0; row < 8; row++) {
-//            for (int col = 0; col < 8; col++) {
-//                ChessBoard.Position p = new ChessBoard.Position(row, col);
-//                if (isLegalMove(p)) ret.add(p);
-//            }
-//        }
-//        return ret;
-//    }
 
     @Override
     public boolean isLegalMove(ChessBoard.Position newPosition) {
