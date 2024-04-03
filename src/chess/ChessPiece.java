@@ -18,7 +18,12 @@ public abstract class ChessPiece {
     }
 
     public abstract List<ChessBoard.Position> getLegalMoves();
-    public abstract boolean isLegalMove(ChessBoard.Position newPosition);
+
+    public boolean isLegalMove(ChessBoard.Position newPosition) {
+        // new position must be on the board and if not empty square, must be opposite color
+        return newPosition.isOnBoard() &&
+                (getBoard().isEmpty(newPosition) || !this.isSameColor(getBoard().getPiece(newPosition)));
+    }
 
     public ChessBoard getBoard() {
         return this.board;
@@ -75,13 +80,6 @@ public abstract class ChessPiece {
             col += dCol;
         }
         return false;
-    }
-
-    protected boolean isLegalMoveCommon(ChessBoard.Position position) {
-        // new position must be on the board
-        // if new position is not empty must be a piece of the opposite color
-        return position.isOnBoard() &&
-                !(!getBoard().isEmpty(position) && this.isSameColor(getBoard().getPiece(position)));
     }
 
     protected void addLineMoves(ChessBoard.Position position, List<ChessBoard.Position> l) {

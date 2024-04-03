@@ -27,12 +27,12 @@ public class King extends ChessPiece {
 
     @Override
     public List<ChessBoard.Position> getLegalMoves() {
-        return Arrays.stream(possibleKingMoves()).filter(this::isLegalMoveCommon).toList();
+        return Arrays.stream(possibleKingMoves()).filter(super::isLegalMove).toList();
     }
 
     @Override
     public boolean isLegalMove(ChessBoard.Position newPosition) {
-        if (!isLegalMoveCommon(newPosition)) return false;
+        if (!super.isLegalMove(newPosition)) return false;
 
         int rowOff = Math.abs(this.getRow() - newPosition.row());
         int colOff = Math.abs(this.getCol() - newPosition.col());

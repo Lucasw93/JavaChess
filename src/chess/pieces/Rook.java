@@ -24,27 +24,8 @@ public class Rook extends ChessPiece {
 
     @Override
     public boolean isLegalMove(ChessBoard.Position newPosition) {
-        if (!isLegalMoveCommon(newPosition)) return false;
-
-        int direction;
-        int curCol = this.getCol();
-        int curRow = this.getRow();
-
-        if (newPosition.sameCol(this.getPosition())) {
-            direction = Integer.compare(newPosition.row(), this.getRow());
-
-            while ((curRow += direction) != newPosition.row()) {
-                if (!getBoard().isEmpty(curRow, curCol)) return false;
-            }
-            return true;
-        }else if (newPosition.sameRow(this.getPosition())) {
-            direction = Integer.compare(newPosition.col(), this.getCol());
-
-            while ((curCol += direction) != newPosition.col()) {
-                if (!getBoard().isEmpty(curRow, curCol)) return false;
-            }
-            return true;
-        }
-        return false;
+        return super.isLegalMove(newPosition) &&
+                getPosition().sameRowOrCol(newPosition) &&
+                !isBlocked(newPosition);
     }
 }
