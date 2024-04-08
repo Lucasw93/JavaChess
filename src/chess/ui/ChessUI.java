@@ -29,9 +29,14 @@ public class ChessUI extends JFrame {
     private ChessBoard.Position selectedSquare;
 
     public ChessUI() {
-        input = inputType.Drag;
+        input = inputType.Click;
 
         Dimension boardSize = new Dimension(500, 500);
+
+
+        // test engine
+        // game.addEngine("test_chess_engines/stockfish-windows-x86-64.exe");
+
 
         // setup layered pane
         getContentPane().add(layeredPane);
@@ -93,9 +98,14 @@ public class ChessUI extends JFrame {
     private boolean moveIfLegal(ChessBoard.Position oldPosition, ChessBoard.Position newPosition) {
         boolean moved = game.moveIfLegal(oldPosition, newPosition);
         if (moved) {
+            if (game.getEnPassantMove()) {
+                int row = game.getBoard().getEnPassantPiece().row();
+                int col = game.getBoard().getEnPassantPiece().col();
+                squares[row][col].setText(null);
+            }
             squares[oldPosition.row()][oldPosition.col()].setText(null);
             squares[newPosition.row()][newPosition.col()]
-                    .setText(game.getBoard().getPiece(newPosition).getSymbol());
+                        .setText(game.getBoard().getPiece(newPosition).getSymbol());
         }
         return moved;
     }

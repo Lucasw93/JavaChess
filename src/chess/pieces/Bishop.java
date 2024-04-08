@@ -27,4 +27,9 @@ public class Bishop extends ChessPiece {
                 this.getPosition().onDiagonal(newPosition) &&
                 !isBlocked(newPosition);
     }
+
+    @Override
+    public String toString() {
+        return isWhite() ? "B" : "b";
+    }
 }

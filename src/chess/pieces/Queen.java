@@ -30,4 +30,9 @@ public class Queen extends ChessPiece {
                         this.getPosition().sameRowOrCol(newPosition)) &&
                 !isBlocked(newPosition);
     }
+
+    @Override
+    public String toString() {
+        return isWhite() ? "Q" : "q";
+    }
 }

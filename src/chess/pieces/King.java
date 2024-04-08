@@ -39,4 +39,9 @@ public class King extends ChessPiece {
 
         return (rowOff + colOff == 1) || (rowOff == 1 && colOff == 1);
     }
+
+    @Override
+    public String toString() {
+        return isWhite() ? "K" : "k";
+    }
 }

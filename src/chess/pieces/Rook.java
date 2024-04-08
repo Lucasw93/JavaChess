@@ -28,4 +28,9 @@ public class Rook extends ChessPiece {
                 getPosition().sameRowOrCol(newPosition) &&
                 !isBlocked(newPosition);
     }
+
+    @Override
+    public String toString() {
+        return isWhite() ? "R" : "r";
+    }
 }

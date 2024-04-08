@@ -5,16 +5,36 @@ import chess.pieces.*;
 public class ChessBoard {
     private final ChessPiece[][] board;
 
+    private Position[] enPassantSquare;
+
     public ChessBoard() {
         this.board = new ChessPiece[ChessConstants.MAX_ROW][ChessConstants.MAX_COL];
         setup();
+    }
+
+    public void setEnPassantSquare(Position[] enPassantSquare) {
+        this.enPassantSquare = enPassantSquare;
+    }
+
+    public boolean hasEnPassantSquare() {
+        return enPassantSquare != null;
+    }
+
+    public Position getEnPassantSquare() {
+        return enPassantSquare[0];
+    }
+
+    public Position getEnPassantPiece() {
+        return enPassantSquare[1];
     }
 
     public record Position(int row, int col) {
 
         @Override
         public String toString() {
-            return String.format("(%d, %d)", row, col);
+            int rank = 8 - row;
+            char file = (char) ('a' + col);
+            return String.format("%c%d", file, rank);
         }
 
         @Override
@@ -107,5 +127,34 @@ public class ChessBoard {
 
     private void addPiece(ChessPiece p) {
         board[p.getRow()][p.getCol()] = p;
+    }
+
+    @Override
+    protected Object clone() throws CloneNotSupportedException {
+        ChessBoard ret = new ChessBoard();
+        
+        for (int row = 0; row < 8; row++) {
+            for (int col = 0; col < 8; col++) {
+                switch (getPiece(row, col)) {
+                    case null:
+                        continue;
+                    case King k: ret.addPiece(new King(k.getRow(), k.getCol(), k.isWhite(), ret));
+                        continue;
+                    case Queen q: ret.addPiece(new Queen(q.getRow(), q.getCol(), q.isWhite(), ret));
+                        continue;
+                    case Rook r: ret.addPiece(new Rook(r.getRow(), r.getCol(), r.isWhite(), ret));
+                        continue;
+                    case Bishop b: ret.addPiece(new Bishop(b.getRow(), b.getCol(), b.isWhite(), ret));
+                        continue;
+                    case Knight k: ret.addPiece(new King(k.getRow(), k.getCol(), k.isWhite(), ret));
+                        continue;
+                    case Pawn p: ret.addPiece(new Pawn(p.getRow(), p.getCol(), p.isWhite(), ret));
+                        continue;
+                    default:
+                        throw new CloneNotSupportedException();
+                }
+            }
+        }
+        return ret;
     }
 }

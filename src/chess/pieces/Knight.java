@@ -40,4 +40,9 @@ public class Knight extends ChessPiece {
 
         return rowOff * colOff == 2;
     }
+
+    @Override
+    public String toString() {
+        return isWhite() ? "N" : "n";
+    }
 }
