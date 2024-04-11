@@ -39,12 +39,12 @@ public class Pawn extends ChessPiece {
     public boolean isLegalMove(ChessBoard.Position newPosition) {
         if (!newPosition.isOnBoard()) return false;
 
+        ChessPiece target = getBoard().getPiece(newPosition);
         int rowOff = (newPosition.row() - this.getRow()) * forward;
         int colOff = Math.abs((newPosition.col() - this.getCol()));
 
         if (colOff == 1 && rowOff == 1) {
             // can capture
-            ChessPiece target = getBoard().getPiece(newPosition);
             if (target != null) {
                 return target.isWhite() != this.isWhite();
             } else if (getBoard().hasEnPassantSquare()) {
@@ -52,11 +52,12 @@ public class Pawn extends ChessPiece {
             }
         } else if (colOff == 0) {
             // single move
-            if (rowOff == 1) return true;
+            if (rowOff == 1) return target == null;
 
             // can move two squares
             if (rowOff == 2 && isStartingPosition()) {
-                return getBoard().isEmpty(getRow() + forward, getCol());
+                return (getBoard().isEmpty(getRow() + forward, getCol()) &&
+                            getBoard().isEmpty(newPosition));
             }
         }
         return false;
