@@ -217,15 +217,7 @@ public class ChessUI extends JFrame {
         }
 
         private boolean hlLegalMoves(ChessBoard.Position position) {
-            if (game.isInCheck()) {
-                for (ChessBoard.Position[] p: game.getInCheckPossibleMoves()) {
-                    if (p[0].equals(position)) {
-                        SquareComponent square = squares[p[1].row()][p[1].col()];
-                        hlSquares.add(square);
-                        square.highlight.setVisible(true);
-                    }
-                }
-            } else for (ChessBoard.Position move : game.getBoard()
+            for (ChessBoard.Position move : game.getBoard()
                     .getPiece(position)
                     .getLegalMoves())
             {

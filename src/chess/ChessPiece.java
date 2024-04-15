@@ -30,6 +30,12 @@ public abstract class ChessPiece {
         return getBoard().isCloned() || moveNotInCheck(newPosition);
     }
 
+    protected boolean isLegalMovePawnWorkaround(ChessBoard.Position newPosition) {
+        // workaround only for pawns so that moveNotInCheck can be called last
+        // and does not need the same checks for `isLegalMove()`
+        return getBoard().isCloned() || moveNotInCheck(newPosition);
+    }
+
     public ChessBoard getBoard() {
         return this.board;
     }
@@ -135,17 +141,21 @@ public abstract class ChessPiece {
         if (!getBoard().isEmpty(row, col)) {
             ChessPiece p = getBoard().getPiece(row, col);
 
-            if (!this.isSameColor(p)) {
-                l.add(p.getPosition());
+            if (this.notSameColor(p)) {
+                if (board.isCloned() || moveNotInCheck(p.getPosition())) {
+                    l.add(p.getPosition());
+                }
             }
             return true;
         }
-        l.add(new ChessBoard.Position(row, col));
+        ChessBoard.Position pos = new ChessBoard.Position(row, col);
+
+        if (board.isCloned() || moveNotInCheck(pos)) l.add(pos);
 
         return false;
     }
 
-    protected boolean moveNotInCheck(ChessBoard.Position newPos) {
+    private boolean moveNotInCheck(ChessBoard.Position newPos) {
         ChessBoard cloneBoard = ChessBoard.newInstance(getBoard());
         cloneBoard.movePiece(getPosition(), newPos);
 
@@ -157,6 +167,7 @@ public abstract class ChessPiece {
                 .filter(this::notSameColor)
                 .noneMatch(f -> f.getLegalMoves().contains(kingPos));
     }
+
 
 //        private boolean moveNotInCheck(ChessBoard.Position newPos) {
 //        ChessBoard cloneBoard = ChessBoard.newInstance(getBoard());
