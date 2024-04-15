@@ -34,8 +34,8 @@ public class ChessUI extends JFrame {
         Dimension boardSize = new Dimension(500, 500);
 
 
-        // test engine
-        game.addEngine("test_chess_engines/stockfish-windows-x86-64.exe");
+        //// test engine
+        // game.addEngine("test_chess_engines/stockfish-windows-x86-64.exe");
 
 
         // setup layered pane
