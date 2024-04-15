@@ -61,15 +61,7 @@ public class ChessGame {
     }
 
     public boolean moveIfLegal(ChessBoard.Position oldPos, ChessBoard.Position newPos) {
-        //System.out.println("LEN: " + inCheckPossibleMoves);
-
-
         if (isLegalMove(oldPos, newPos)) {
-//            if (isInCheck()) {
-//                ChessBoard.Position p = inCheckPossibleMoves.get(oldPos);
-//                if (p == null ||  !p.equals(newPos)) return false;
-//                inCheckPossibleMoves.clear();
-//            }
             if (isEnPassantMove(oldPos, newPos)) {
                 board.movePiece(oldPos, board.getEnPassantPiece());
                 board.movePiece(board.getEnPassantPiece(), newPos);
@@ -136,7 +128,7 @@ public class ChessGame {
                 });
 
         //// test
-        possibleCheckMoves.forEach(f -> System.out.println(f[0] + " to " + f[1]));
+        // possibleCheckMoves.forEach(f -> System.out.println(f[0] + " to " + f[1]));
     }
 
     private boolean isLegalInCheckMove(ChessBoard.Position oldPos, ChessBoard.Position newPos) {
