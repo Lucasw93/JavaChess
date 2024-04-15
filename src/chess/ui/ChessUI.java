@@ -35,7 +35,7 @@ public class ChessUI extends JFrame {
 
 
         // test engine
-        // game.addEngine("test_chess_engines/stockfish-windows-x86-64.exe");
+        game.addEngine("test_chess_engines/stockfish-windows-x86-64.exe");
 
 
         // setup layered pane
@@ -182,8 +182,9 @@ public class ChessUI extends JFrame {
                 ChessPiece p = getChessPiece();
 
                 if (p != null && game.isWhiteTurn() == p.isWhite()) {
-                    selectedSquare = position;
-                    hlLegalMoves();
+                    if (hlLegalMoves(position)) {
+                        selectedSquare = position;
+                    } else return;
                 }
             } else {
                 hlClear();
@@ -215,15 +216,24 @@ public class ChessUI extends JFrame {
             }
         }
 
-        private void hlLegalMoves() {
-             for (ChessBoard.Position move : game.getBoard()
-                     .getPiece(selectedSquare)
-                     .getLegalMoves())
-             {
-                 SquareComponent square = squares[move.row()][move.col()];
-                 hlSquares.add(square);
-                 square.highlight.setVisible(true);
-             }
+        private boolean hlLegalMoves(ChessBoard.Position position) {
+            if (game.isInCheck()) {
+                for (ChessBoard.Position[] p: game.getInCheckPossibleMoves()) {
+                    if (p[0].equals(position)) {
+                        SquareComponent square = squares[p[1].row()][p[1].col()];
+                        hlSquares.add(square);
+                        square.highlight.setVisible(true);
+                    }
+                }
+            } else for (ChessBoard.Position move : game.getBoard()
+                    .getPiece(position)
+                    .getLegalMoves())
+            {
+                SquareComponent square = squares[move.row()][move.col()];
+                hlSquares.add(square);
+                square.highlight.setVisible(true);
+            }
+            return !hlSquares.isEmpty();
         }
 
         private void hlClear() {

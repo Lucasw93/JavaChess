@@ -1,20 +1,21 @@
 package chess;
 
 import chess.engine.ChessEngine;
+import chess.pieces.Bishop;
 import chess.pieces.King;
 import chess.pieces.Pawn;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class ChessGame {
     private final ChessBoard board;
 
     private boolean whiteTurn = true;
-    private boolean inCheck = false;
     private boolean enPassantMove;
+
+    private List<ChessBoard.Position[]> possibleCheckMoves = new ArrayList<>();
 
     private ChessEngine engine;
 
@@ -48,7 +49,11 @@ public class ChessGame {
     }
 
     public boolean isInCheck() {
-        return inCheck;
+        return !possibleCheckMoves.isEmpty();
+    }
+
+    public List<ChessBoard.Position[]> getInCheckPossibleMoves() {
+        return possibleCheckMoves;
     }
 
     public boolean getEnPassantMove() {
@@ -56,7 +61,15 @@ public class ChessGame {
     }
 
     public boolean moveIfLegal(ChessBoard.Position oldPos, ChessBoard.Position newPos) {
+        //System.out.println("LEN: " + inCheckPossibleMoves);
+
+
         if (isLegalMove(oldPos, newPos)) {
+//            if (isInCheck()) {
+//                ChessBoard.Position p = inCheckPossibleMoves.get(oldPos);
+//                if (p == null ||  !p.equals(newPos)) return false;
+//                inCheckPossibleMoves.clear();
+//            }
             if (isEnPassantMove(oldPos, newPos)) {
                 board.movePiece(oldPos, board.getEnPassantPiece());
                 board.movePiece(board.getEnPassantPiece(), newPos);
@@ -75,11 +88,10 @@ public class ChessGame {
 
             if (check.isPresent()) {
                 System.out.println("CHECK");
-                inCheck = true;
 
-                ChessPiece p = check.get();
+                findInCheckMoves(newPos, check.get());
 
-                if (isCheckMate(p.getPosition(), p.getLegalMoves())) {
+                if (possibleCheckMoves.isEmpty()) {
                     System.out.println("CHECK MATE");
                 }
             }
@@ -89,48 +101,54 @@ public class ChessGame {
     }
 
     private boolean isLegalMove(ChessBoard.Position start, ChessBoard.Position end) {
-        ChessPiece p = board.getPiece(start);
+        if (isInCheck()) {
+            for (ChessBoard.Position[] p : possibleCheckMoves) {
+                if (p[0].equals(start) && p[1].equals(end)) {
+                    possibleCheckMoves.clear();
+                    return true;
+                }
+            }
+            return false;
+        } else {
+            ChessPiece p = board.getPiece(start);
 
-        return (p != null && p.isLegalMove(end) && p.isWhite() == whiteTurn);
+            return (p != null && p.isWhite() == whiteTurn && p.isLegalMove(end));
+        }
     }
 
     private Optional<ChessPiece> isCheck(ChessBoard.Position lastMove) {
         return board.getPiece(lastMove).getLegalMoves().stream()
-                .map(f -> getBoard().getPiece(f))
+                .map(board::getPiece)
                 .filter(f -> f instanceof King)
                 .findFirst();
     }
 
-    private boolean isCheckMate(ChessBoard.Position curKingPosition, List<ChessBoard.Position> kingMoves) {
-        for (ChessBoard.Position kingMove : kingMoves) {
-            try {
-                ChessBoard cloneBoard = (ChessBoard) getBoard().clone();
+    private void findInCheckMoves(ChessBoard.Position attackingPiece, ChessPiece king) {
+        board.toStream()
+                .filter(Objects::nonNull)
+                .filter(f -> f.isWhite() == whiteTurn)
+                .forEach(p -> {
+                    for (ChessBoard.Position end : p.getLegalMoves()) {
+                        if (isLegalInCheckMove(p.getPosition(), end)) {
+                            possibleCheckMoves.add(new ChessBoard.Position[] { p.getPosition(), end });
+                        }
+                    }
+                });
 
-                cloneBoard.movePiece(curKingPosition, kingMove);
-
-                /* if `scanBoardForCheck()` is false, there is a legal move for the king */
-                if (!scanBoardForCheck(kingMove, cloneBoard)) return false;
-            } catch (Exception e) {
-                System.err.println("Clone failed");
-            }
-        }
-        return true;
+        //// test
+        possibleCheckMoves.forEach(f -> System.out.println(f[0] + " to " + f[1]));
     }
 
-    private boolean scanBoardForCheck(ChessBoard.Position testKingPos, ChessBoard boardState) {
-        // scan entire @cloneBoard to see is the board is in a state where the king is in check
-        // @testKingPos is given as a convenience to avoid (instance of king)
-        for (int row = 0; row < 8; row++) {
-            for (int col = 0; col < 8; col++) {
-                ChessPiece p = boardState.getPiece(row, col);
-                if (p == null || p.isWhite() == whiteTurn) continue;
+    private boolean isLegalInCheckMove(ChessBoard.Position oldPos, ChessBoard.Position newPos) {
+        ChessBoard cloneBoard = ChessBoard.newInstance(board);
+        cloneBoard.movePiece(oldPos, newPos);
 
-                if (p.getLegalMoves()
-                        .stream()
-                        .anyMatch(f -> f.equals(testKingPos))) return true;
-            }
-        }
-        return false;
+        ChessBoard.Position kingPos = cloneBoard.getKingPosition(whiteTurn);
+
+        return cloneBoard.toStream()
+                .filter(Objects::nonNull)
+                .filter(f -> f.isWhite() != whiteTurn)
+                .noneMatch(f -> f.getLegalMoves().contains(kingPos));
     }
 
     private void updateEnPassantSquare(int startRow, ChessBoard.Position endPos) {

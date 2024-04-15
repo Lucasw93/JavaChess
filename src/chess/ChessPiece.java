@@ -1,6 +1,7 @@
 package chess;
 
 import java.util.List;
+import java.util.Objects;
 
 public abstract class ChessPiece {
     private final boolean white;
@@ -21,8 +22,12 @@ public abstract class ChessPiece {
 
     public boolean isLegalMove(ChessBoard.Position newPosition) {
         // new position must be on the board and if not empty square, must be opposite color
-        return newPosition.isOnBoard() &&
-                (getBoard().isEmpty(newPosition) || !this.isSameColor(getBoard().getPiece(newPosition)));
+        if (!(newPosition.isOnBoard() &&
+                (getBoard().isEmpty(newPosition) ||
+                        !this.isSameColor(getBoard().getPiece(newPosition))))) return false;
+
+        // cant move into check
+        return getBoard().isCloned() || moveNotInCheck(newPosition);
     }
 
     public ChessBoard getBoard() {
@@ -45,17 +50,6 @@ public abstract class ChessPiece {
         return position.col();
     }
 
-    public  int getValue() {
-        return value;
-    }
-
-    public void setPosition(int row, int col) {
-        //this.position = new ChessBoard.Position(row, col);
-
-        // this.position.get = row;
-        //this.position.col = col;
-    }
-
     public void setPosition(ChessBoard.Position newPosition) {
         this.position = newPosition;
     }
@@ -66,6 +60,10 @@ public abstract class ChessPiece {
 
     public boolean isSameColor(ChessPiece piece) {
         return this.isWhite() == piece.isWhite();
+    }
+
+    public boolean notSameColor(ChessPiece piece) {
+        return this.isWhite() != piece.isWhite();
     }
 
     protected boolean isBlocked(ChessBoard.Position position) {
@@ -146,4 +144,32 @@ public abstract class ChessPiece {
 
         return false;
     }
+
+    protected boolean moveNotInCheck(ChessBoard.Position newPos) {
+        ChessBoard cloneBoard = ChessBoard.newInstance(getBoard());
+        cloneBoard.movePiece(getPosition(), newPos);
+
+        ChessBoard.Position kingPos = cloneBoard.getKingPosition(isWhite());
+
+        // scan entire board to see if the board is in a state where the king is in check
+        return cloneBoard.toStream()
+                .filter(Objects::nonNull)
+                .filter(this::notSameColor)
+                .noneMatch(f -> f.getLegalMoves().contains(kingPos));
+    }
+
+//        private boolean moveNotInCheck(ChessBoard.Position newPos) {
+//        ChessBoard cloneBoard = ChessBoard.newInstance(getBoard());
+//        cloneBoard.movePiece(getPosition(), newPos);
+//        cloneBoard.cloned = true;
+//        ChessBoard.Position kingPos = cloneBoard.getKingPosition(isWhite());
+//        for (int row = 0; row < 8; row++) {
+//            for (int col = 0; col < 8; col++) {
+//                ChessPiece p = cloneBoard.getPiece(row, col);
+//                if (p == null || p.isSameColor(this)) continue;
+//                if (p.getLegalMoves().contains(kingPos)) return false;
+//            }
+//        }
+//        return true;
+//    }
 }
