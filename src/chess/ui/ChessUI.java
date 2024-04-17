@@ -77,6 +77,10 @@ public class ChessUI extends JFrame {
         setVisible(true);
         pack();
 
+        Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
+        setLocation((screen.width / 2) - (getWidth() / 2),
+                (screen.height / 2) - (getHeight() / 2));
+
 
 //        init();
 //        setTitle("Chess Game");
@@ -106,6 +110,10 @@ public class ChessUI extends JFrame {
             squares[oldPosition.row()][oldPosition.col()].setText(null);
             squares[newPosition.row()][newPosition.col()]
                         .setText(game.getBoard().getPiece(newPosition).getSymbol());
+
+            if (game.hasCheck()) {
+                notifyInCheck(game.isWhiteTurn());
+            }
         }
         return moved;
     }
@@ -343,5 +351,42 @@ public class ChessUI extends JFrame {
                 setSize(new Dimension(70, 70));
             }
         }
+    }
+
+    private void notifyInCheck(boolean whiteTurn) {
+        JDialog dialog = new JDialog(this, true);
+
+        JLabel label = new JLabel((whiteTurn ? " White " : " Black ") + "King in Check ");
+        label.setFont(new Font("SansSerif", Font.BOLD, 24));
+        label.setForeground(Color.BLACK);
+
+        JPanel buttonPanel = new JPanel();
+        JButton button = new JButton("OK");
+        button.addActionListener(e -> dialog.dispose());
+        buttonPanel.add(button);
+
+        button.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                e.getComponent().setBackground(Color.GRAY);
+            }
+            @Override
+            public void mouseExited(MouseEvent e) {
+                e.getComponent().setBackground(null);
+            }
+        });
+        JRootPane rootPane = dialog.getRootPane();
+        rootPane.setBorder(BorderFactory.createLineBorder(Color.BLACK, 5));
+        rootPane.setDefaultButton(button);
+
+        dialog.add(label, BorderLayout.NORTH);
+        dialog.add(buttonPanel, BorderLayout.SOUTH);
+        dialog.setUndecorated(true);
+        dialog.pack();
+
+        int x = getLocation().x + (getSize().width / 2) - (dialog.getWidth() / 2);
+        int y = getLocation().y + (getSize().height / 2) - (dialog.getHeight() / 2);
+        dialog.setLocation(x, y);
+        dialog.setVisible(true);
     }
 }

@@ -14,9 +14,14 @@ public class ChessGame {
     private boolean whiteTurn = true;
     private boolean enPassantMove;
     private ChessEngine engine;
+    private boolean isCheck;
 
     public ChessGame() {
         this.board = new ChessBoard();
+    }
+
+    public boolean hasCheck() {
+        return isCheck;
     }
 
     public ChessBoard getBoard() {
@@ -84,7 +89,8 @@ public class ChessGame {
     }
 
     private boolean isCheck(ChessBoard.Position lastMove) {
-        return board.getPiece(lastMove).getLegalMoves().contains(board.getKingPosition(whiteTurn));
+        return isCheck = board.getPiece(lastMove)
+                .getLegalMoves().contains(board.getKingPosition(whiteTurn));
     }
 
     private boolean isCheckMate() {
@@ -112,11 +118,9 @@ public class ChessGame {
     }
 
     private boolean isEnPassantMove(ChessBoard.Position oldPos, ChessBoard.Position newPos) {
-        enPassantMove = getBoard().getPiece(oldPos) instanceof Pawn &&
+        return enPassantMove = getBoard().getPiece(oldPos) instanceof Pawn &&
                 board.hasEnPassantSquare() &&
                 newPos.equals(board.getEnPassantSquare());
-
-        return enPassantMove;
     }
 
 
