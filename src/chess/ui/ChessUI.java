@@ -6,11 +6,11 @@ import chess.ChessPiece;
 import chess.ChessConstants;
 
 import javax.swing.*;
+import javax.swing.border.EtchedBorder;
 import javax.swing.event.MouseInputAdapter;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 
@@ -72,47 +72,34 @@ public class ChessUI extends JFrame {
         }
         selectedSquare = null;
 
-
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setVisible(true);
         pack();
-
         Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
         setLocation((screen.width / 2) - (getWidth() / 2),
                 (screen.height / 2) - (getHeight() / 2));
 
-
-//        init();
-//        setTitle("Chess Game");
-//        setLayout(new GridLayout(chess.ChessConstants.MAX_ROW, chess.ChessConstants.MAX_COL));
-//        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-//        setVisible(true);
-//
-//        pack();
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setVisible(true);
     }
 
-//    private void init() {
-//        for (int row = chess.ChessConstants.MIN_ROW; row < chess.ChessConstants.MAX_ROW; row++) {
-//            for (int col = chess.ChessConstants.MIN_COL; col < chess.ChessConstants.MAX_COL; col++) {
-//            }
-//        }
-//        selectedSquare = null;
-//    }
 
     private boolean moveIfLegal(ChessBoard.Position oldPosition, ChessBoard.Position newPosition) {
         boolean moved = game.moveIfLegal(oldPosition, newPosition);
         if (moved) {
-            if (game.getEnPassantMove()) {
+            if (game.isEnPassantMove()) {
                 int row = game.getBoard().getEnPassantPiece().row();
                 int col = game.getBoard().getEnPassantPiece().col();
                 squares[row][col].setText(null);
+            } else if (game.hasPromotion()) {
+                pawnPromotionDialog(newPosition);
             }
             squares[oldPosition.row()][oldPosition.col()].setText(null);
             squares[newPosition.row()][newPosition.col()]
                         .setText(game.getBoard().getPiece(newPosition).getSymbol());
 
             if (game.hasCheck()) {
-                notifyInCheck(game.isWhiteTurn());
+                JOptionPane.showMessageDialog( this,
+                        (game.isWhiteTurn() ? "White " : "Black ") + "King in Check",
+                        null, JOptionPane.INFORMATION_MESSAGE);
             }
         }
         return moved;
@@ -353,40 +340,44 @@ public class ChessUI extends JFrame {
         }
     }
 
-    private void notifyInCheck(boolean whiteTurn) {
-        JDialog dialog = new JDialog(this, true);
+    private final ChessGame.PossiblePromotions DEFAULT_PROMOTION = ChessGame.PossiblePromotions.QUEEN;
+    private void pawnPromotionDialog(ChessBoard.Position position) {
+        JDialog dialog  = new JDialog(this, true);
 
-        JLabel label = new JLabel((whiteTurn ? " White " : " Black ") + "King in Check ");
-        label.setFont(new Font("SansSerif", Font.BOLD, 24));
-        label.setForeground(Color.BLACK);
+        game.setPromotion(DEFAULT_PROMOTION);
 
+        /* radio buttons */
         JPanel buttonPanel = new JPanel();
-        JButton button = new JButton("OK");
-        button.addActionListener(e -> dialog.dispose());
-        buttonPanel.add(button);
+        ButtonGroup buttonGroup = new ButtonGroup();
+        addRadioButton("Queen", ChessGame.PossiblePromotions.QUEEN, buttonGroup, buttonPanel);
+        addRadioButton("Rook", ChessGame.PossiblePromotions.ROOK, buttonGroup, buttonPanel);
+        addRadioButton("Bishop", ChessGame.PossiblePromotions.BISHOP, buttonGroup, buttonPanel);
+        addRadioButton("Knight", ChessGame.PossiblePromotions.KNIGHT, buttonGroup, buttonPanel);
 
-        button.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseEntered(MouseEvent e) {
-                e.getComponent().setBackground(Color.GRAY);
-            }
-            @Override
-            public void mouseExited(MouseEvent e) {
-                e.getComponent().setBackground(null);
-            }
+        /* ok button */
+        JPanel okPanel = new JPanel();
+        JButton okButton = new JButton("OK");
+        okButton.addActionListener(e -> {
+            game.promote(position);
+            dialog.dispose();
         });
-        JRootPane rootPane = dialog.getRootPane();
-        rootPane.setBorder(BorderFactory.createLineBorder(Color.BLACK, 5));
-        rootPane.setDefaultButton(button);
+        okPanel.add(okButton);
 
-        dialog.add(label, BorderLayout.NORTH);
-        dialog.add(buttonPanel, BorderLayout.SOUTH);
+        dialog.add(buttonPanel, BorderLayout.NORTH);
+        dialog.add(okPanel, BorderLayout.SOUTH);
+        dialog.getRootPane().setDefaultButton(okButton);
+        dialog.getRootPane().setBorder(BorderFactory.createEtchedBorder(EtchedBorder.RAISED));
         dialog.setUndecorated(true);
-        dialog.pack();
 
-        int x = getLocation().x + (getSize().width / 2) - (dialog.getWidth() / 2);
-        int y = getLocation().y + (getSize().height / 2) - (dialog.getHeight() / 2);
-        dialog.setLocation(x, y);
+        dialog.pack();
+        dialog.setLocationRelativeTo(this);
         dialog.setVisible(true);
+    }
+
+    private void addRadioButton(String name, ChessGame.PossiblePromotions p, ButtonGroup group, JPanel panel) {
+        JRadioButton b = new JRadioButton(name, p == DEFAULT_PROMOTION);
+        group.add(b);
+        panel.add(b);
+        b.addActionListener(e -> game.setPromotion(p));
     }
 }

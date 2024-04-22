@@ -1,7 +1,7 @@
 package chess;
 
 import java.util.List;
-import java.util.Objects;
+
 
 public abstract class ChessPiece {
     private final boolean white;
@@ -162,8 +162,7 @@ public abstract class ChessPiece {
         ChessBoard.Position kingPos = cloneBoard.getKingPosition(isWhite());
 
         // scan entire board to see if the board is in a state where the king is in check
-        return cloneBoard.toStream()
-                .filter(Objects::nonNull)
+        return ChessBoard.stream(cloneBoard)
                 .filter(this::notSameColor)
                 .noneMatch(f -> f.getLegalMoves().contains(kingPos));
     }

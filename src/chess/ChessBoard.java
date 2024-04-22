@@ -1,6 +1,7 @@
 package chess;
 
 import chess.pieces.*;
+
 import java.util.Objects;
 import java.util.Arrays;
 import java.util.stream.Stream;
@@ -32,7 +33,7 @@ public class ChessBoard {
         ChessBoard ret = new ChessBoard(
                 new ChessPiece[8][8], _board.bKingPosition, _board.wKingPosition);
 
-        _board.toStream().filter(Objects::nonNull).forEach(piece -> {
+        ChessBoard.stream(_board).forEach(piece -> {
             switch (piece) {
                 case King k: ret.addPiece(new King(k.getRow(), k.getCol(), k.isWhite(), ret));
                     break;
@@ -141,6 +142,10 @@ public class ChessBoard {
         }
     }
 
+    public void promotePiece(ChessPiece piece) {
+        board[piece.getRow()][piece.getCol()] = piece;
+    }
+
     public boolean isEmpty(Position position) {
         return getPiece(position) == null;
     }
@@ -149,8 +154,8 @@ public class ChessBoard {
         return getPiece(row, col) == null;
     }
 
-    public Stream<ChessPiece> toStream() {
-        return Arrays.stream(board).flatMap(Arrays::stream);
+    public static Stream<ChessPiece> stream(ChessBoard board) {
+        return Arrays.stream(board.board).flatMap(Arrays::stream).filter(Objects::nonNull);
     }
 
     private void setup() {

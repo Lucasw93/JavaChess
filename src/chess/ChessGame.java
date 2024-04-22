@@ -1,27 +1,39 @@
 package chess;
 
 import chess.engine.ChessEngine;
-import chess.pieces.Bishop;
-import chess.pieces.King;
-import chess.pieces.Pawn;
+import chess.pieces.*;
 
 import java.io.IOException;
-import java.util.*;
-import java.util.stream.Collectors;
+
 
 public class ChessGame {
     private final ChessBoard board;
     private boolean whiteTurn = true;
     private boolean enPassantMove;
     private ChessEngine engine;
-    private boolean isCheck;
+    private boolean check;
+    private boolean promotion;
+
+    public enum PossiblePromotions {
+        QUEEN, ROOK, BISHOP, KNIGHT
+    }
+
+    private PossiblePromotions possiblePromotions;
 
     public ChessGame() {
         this.board = new ChessBoard();
     }
 
+    public void setPromotion(PossiblePromotions possiblePromotions) {
+        this.possiblePromotions = possiblePromotions;
+    }
+
+    public boolean hasPromotion() {
+        return promotion;
+    }
+
     public boolean hasCheck() {
-        return isCheck;
+        return check;
     }
 
     public ChessBoard getBoard() {
@@ -49,8 +61,35 @@ public class ChessGame {
         return this.whiteTurn;
     }
 
-    public boolean getEnPassantMove() {
+    public boolean isEnPassantMove() {
         return enPassantMove;
+    }
+
+    public void promote(ChessBoard.Position position) {
+        ChessPiece p;
+        switch (possiblePromotions) {
+            case QUEEN: p = new Queen(position.row(), position.col(), whiteTurn, board);
+                break;
+            case ROOK: p = new Rook(position.row(), position.col(), whiteTurn, board);
+                break;
+            case BISHOP: p = new Bishop(position.row(), position.col(), whiteTurn, board);
+                break;
+            case KNIGHT: p = new Knight(position.row(), position.col(), whiteTurn, board);
+                break;
+            default:
+                return;
+        }
+        possiblePromotions = null;
+        promotion = false;
+        board.promotePiece(p);
+        whiteTurn = !whiteTurn;
+
+        if (isCheck(position)) {
+            System.out.println("CHECK");
+            if (isCheckMate()) {
+                System.out.println("CHECK MATE");
+            }
+        }
     }
 
     public boolean moveIfLegal(ChessBoard.Position oldPos, ChessBoard.Position newPos) {
@@ -61,6 +100,8 @@ public class ChessGame {
             } else {
                 board.movePiece(oldPos, newPos);
                 updateEnPassantSquare(oldPos.row(), newPos);
+
+                if (checkForPawnPromotion(newPos)) return true;
             }
             whiteTurn = !whiteTurn;
 
@@ -89,15 +130,19 @@ public class ChessGame {
     }
 
     private boolean isCheck(ChessBoard.Position lastMove) {
-        return isCheck = board.getPiece(lastMove)
+        return check = board.getPiece(lastMove)
                 .getLegalMoves().contains(board.getKingPosition(whiteTurn));
     }
 
     private boolean isCheckMate() {
-        return board.toStream()
-                .filter(Objects::nonNull)
+        return ChessBoard.stream(board)
                 .filter(f -> f.isWhite() == whiteTurn)
                 .allMatch(p -> p.getLegalMoves().isEmpty());
+    }
+
+    private boolean checkForPawnPromotion(ChessBoard.Position newPos) {
+        return promotion = (newPos.row() == 8 && !whiteTurn) || (newPos.row() == 0 && whiteTurn) &&
+                board.getPiece(newPos) instanceof Pawn;
     }
 
     private void updateEnPassantSquare(int startRow, ChessBoard.Position endPos) {
