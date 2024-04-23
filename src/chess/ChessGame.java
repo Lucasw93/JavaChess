@@ -14,18 +14,8 @@ public class ChessGame {
     private boolean check;
     private boolean promotion;
 
-    public enum PossiblePromotions {
-        QUEEN, ROOK, BISHOP, KNIGHT
-    }
-
-    private PossiblePromotions possiblePromotions;
-
     public ChessGame() {
         this.board = new ChessBoard();
-    }
-
-    public void setPromotion(PossiblePromotions possiblePromotions) {
-        this.possiblePromotions = possiblePromotions;
     }
 
     public boolean hasPromotion() {
@@ -65,27 +55,23 @@ public class ChessGame {
         return enPassantMove;
     }
 
-    public void promote(ChessBoard.Position position) {
-        ChessPiece p;
-        switch (possiblePromotions) {
-            case QUEEN: p = new Queen(position.row(), position.col(), whiteTurn, board);
-                break;
-            case ROOK: p = new Rook(position.row(), position.col(), whiteTurn, board);
-                break;
-            case BISHOP: p = new Bishop(position.row(), position.col(), whiteTurn, board);
-                break;
-            case KNIGHT: p = new Knight(position.row(), position.col(), whiteTurn, board);
-                break;
-            default:
-                return;
-        }
-        possiblePromotions = null;
+    public void promote(ChessBoard.Position position, Class<?> c) {
+        board.promotePiece(c.equals(Queen.class)
+                ? new Queen(position.row(), position.col(), whiteTurn, board)
+                : c.equals(Rook.class)
+                ? new Rook(position.row(), position.col(), whiteTurn, board)
+                : c.equals(Bishop.class)
+                ? new Bishop(position.row(), position.col(), whiteTurn, board)
+                : c.equals(Knight.class)
+                ? new Knight(position.row(), position.col(), whiteTurn, board):
+                    null);
+
         promotion = false;
-        board.promotePiece(p);
         whiteTurn = !whiteTurn;
 
         if (isCheck(position)) {
             System.out.println("CHECK");
+
             if (isCheckMate()) {
                 System.out.println("CHECK MATE");
             }
@@ -122,6 +108,7 @@ public class ChessGame {
         }
         return false;
     }
+
 
     private boolean isLegalMove(ChessBoard.Position start, ChessBoard.Position end) {
         ChessPiece p = board.getPiece(start);

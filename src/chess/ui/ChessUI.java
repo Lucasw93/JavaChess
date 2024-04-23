@@ -4,6 +4,10 @@ import chess.ChessBoard;
 import chess.ChessGame;
 import chess.ChessPiece;
 import chess.ChessConstants;
+import chess.pieces.Bishop;
+import chess.pieces.Knight;
+import chess.pieces.Queen;
+import chess.pieces.Rook;
 
 import javax.swing.*;
 import javax.swing.border.EtchedBorder;
@@ -90,7 +94,7 @@ public class ChessUI extends JFrame {
                 int col = game.getBoard().getEnPassantPiece().col();
                 squares[row][col].setText(null);
             } else if (game.hasPromotion()) {
-                pawnPromotionDialog(newPosition);
+                new PromotionDialog(newPosition);
             }
             squares[oldPosition.row()][oldPosition.col()].setText(null);
             squares[newPosition.row()][newPosition.col()]
@@ -340,44 +344,43 @@ public class ChessUI extends JFrame {
         }
     }
 
-    private final ChessGame.PossiblePromotions DEFAULT_PROMOTION = ChessGame.PossiblePromotions.QUEEN;
-    private void pawnPromotionDialog(ChessBoard.Position position) {
-        JDialog dialog  = new JDialog(this, true);
+    private class PromotionDialog extends JDialog {
+        JPanel panel = new JPanel();
+        ButtonGroup group = new ButtonGroup();
+        Class<?> promotion = Queen.class;
 
-        game.setPromotion(DEFAULT_PROMOTION);
+        public PromotionDialog(ChessBoard.Position position) {
+            addRadioButton("Queen", Queen.class);
+            addRadioButton("Rook", Rook.class);
+            addRadioButton("Bishop", Bishop.class);
+            addRadioButton("Knight", Knight.class);
 
-        /* radio buttons */
-        JPanel buttonPanel = new JPanel();
-        ButtonGroup buttonGroup = new ButtonGroup();
-        addRadioButton("Queen", ChessGame.PossiblePromotions.QUEEN, buttonGroup, buttonPanel);
-        addRadioButton("Rook", ChessGame.PossiblePromotions.ROOK, buttonGroup, buttonPanel);
-        addRadioButton("Bishop", ChessGame.PossiblePromotions.BISHOP, buttonGroup, buttonPanel);
-        addRadioButton("Knight", ChessGame.PossiblePromotions.KNIGHT, buttonGroup, buttonPanel);
+            JPanel okPanel = new JPanel();
+            JButton okButton = new JButton("OK");
+            okButton.addActionListener(e -> {
+                game.promote(position, promotion);
+                dispose();
+            });
+            okPanel.add(okButton);
 
-        /* ok button */
-        JPanel okPanel = new JPanel();
-        JButton okButton = new JButton("OK");
-        okButton.addActionListener(e -> {
-            game.promote(position);
-            dialog.dispose();
-        });
-        okPanel.add(okButton);
+            add(panel, BorderLayout.NORTH);
+            add(okPanel, BorderLayout.SOUTH);
 
-        dialog.add(buttonPanel, BorderLayout.NORTH);
-        dialog.add(okPanel, BorderLayout.SOUTH);
-        dialog.getRootPane().setDefaultButton(okButton);
-        dialog.getRootPane().setBorder(BorderFactory.createEtchedBorder(EtchedBorder.RAISED));
-        dialog.setUndecorated(true);
+            getRootPane().setDefaultButton(okButton);
+            getRootPane().setBorder(BorderFactory.createEtchedBorder(EtchedBorder.RAISED));
+            setUndecorated(true);
+            pack();
 
-        dialog.pack();
-        dialog.setLocationRelativeTo(this);
-        dialog.setVisible(true);
-    }
+            setLocationRelativeTo(ChessUI.this);
+            setModalityType(ModalityType.TOOLKIT_MODAL);
+            setVisible(true);
+        }
 
-    private void addRadioButton(String name, ChessGame.PossiblePromotions p, ButtonGroup group, JPanel panel) {
-        JRadioButton b = new JRadioButton(name, p == DEFAULT_PROMOTION);
-        group.add(b);
-        panel.add(b);
-        b.addActionListener(e -> game.setPromotion(p));
+        private void addRadioButton(String name, Class<?> c) {
+            JRadioButton b = new JRadioButton(name, c.equals(Queen.class));
+            group.add(b);
+            panel.add(b);
+            b.addActionListener(e -> promotion = c);
+        }
     }
 }
