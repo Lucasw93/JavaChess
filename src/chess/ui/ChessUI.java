@@ -101,9 +101,18 @@ public class ChessUI extends JFrame {
                         .setText(game.getBoard().getPiece(newPosition).getSymbol());
 
             if (game.hasCheck()) {
-                JOptionPane.showMessageDialog( this,
-                        (game.isWhiteTurn() ? "White " : "Black ") + "King in Check",
-                        null, JOptionPane.INFORMATION_MESSAGE);
+                if (game.hasCheckMate()) {
+                    switch (getGameOverOptions()) {
+                        case 0: resetGame();
+                            break;
+                        case 1: System.out.println("TODO");
+                            break;
+                    }
+                } else {
+                    JOptionPane.showMessageDialog( this,
+                            (game.isWhiteTurn() ? "White " : "Black ") + "King in Check",
+                            null, JOptionPane.INFORMATION_MESSAGE);
+                }
             }
         }
         return moved;
@@ -381,6 +390,31 @@ public class ChessUI extends JFrame {
             group.add(b);
             panel.add(b);
             b.addActionListener(e -> promotion = c);
+        }
+    }
+
+    private int getGameOverOptions() {
+        JLabel message = new JLabel("Checkmate: " +
+                ((game.isWhiteTurn() ? "Black " : "White ") + "Wins "));
+
+        message.setFont(new Font("SansSerif", Font.BOLD, 18));
+
+        String[] options = {"New Game",
+                            "Analysis"};
+        return JOptionPane.showOptionDialog(this, message, null,
+                JOptionPane.YES_NO_OPTION, JOptionPane.INFORMATION_MESSAGE, null,
+                options, options[1]);
+    }
+
+    private void resetGame() {
+        game.resetGame();
+
+        for (int row = 0; row < 8; row++) {
+            for (int col = 0; col < 8; col++) {
+                ChessPiece p = game.getBoard().getPiece(row, col);
+
+                squares[row][col].setText(p == null ? null : p.getSymbol());
+            }
         }
     }
 }

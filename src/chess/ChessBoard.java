@@ -18,7 +18,7 @@ public class ChessBoard {
 
     public ChessBoard() {
         this.board = new ChessPiece[ChessConstants.MAX_ROW][ChessConstants.MAX_COL];
-        setup();
+        startpos(this);
     }
 
     // copy constructor
@@ -158,35 +158,43 @@ public class ChessBoard {
         return Arrays.stream(board.board).flatMap(Arrays::stream).filter(Objects::nonNull);
     }
 
-    private void setup() {
+    public static void startpos(ChessBoard b) {
 
-        // test
-        // addPiece(new Rook(4, 4, true, this));
+        //// test
+        // b.addPiece(new Rook(4, 4, true, b));
 
-        bKingPosition = new Position(0, 4);
-        wKingPosition = new Position(7, 4);
+        b.bKingPosition = new Position(0, 4);
+        b.wKingPosition = new Position(7, 4);
 
-        addPiece(new Rook(0, 0, false, this));
-        addPiece(new Knight(0, 1, false, this));
-        addPiece(new Bishop(0, 2, false, this));
-        addPiece(new Queen(0, 3, false, this));
-        addPiece(new King(0, 4, false, this));
-        addPiece(new Bishop(0, 5, false, this));
-        addPiece(new Knight(0, 6, false, this));
-        addPiece(new Rook(0, 7, false, this));
+        b.addPiece(new Rook(0, 0, false, b));
+        b.addPiece(new Knight(0, 1, false, b));
+        b.addPiece(new Bishop(0, 2, false, b));
+        b.addPiece(new Queen(0, 3, false, b));
+        b.addPiece(new King(0, 4, false, b));
+        b.addPiece(new Bishop(0, 5, false, b));
+        b.addPiece(new Knight(0, 6, false, b));
+        b.addPiece(new Rook(0, 7, false, b));
 
-        addPiece(new Rook(7, 0, true, this));
-        addPiece(new Knight(7, 1, true, this));
-        addPiece(new Bishop(7, 2, true, this));
-        addPiece(new Queen(7, 3, true, this));
-        addPiece(new King(7, 4, true, this));
-        addPiece(new Bishop(7, 5, true, this));
-        addPiece(new Knight(7, 6, true, this));
-        addPiece(new Rook(7, 7, true, this));
+        b.addPiece(new Rook(7, 0, true, b));
+        b.addPiece(new Knight(7, 1, true, b));
+        b.addPiece(new Bishop(7, 2, true, b));
+        b.addPiece(new Queen(7, 3, true, b));
+        b.addPiece(new King(7, 4, true, b));
+        b.addPiece(new Bishop(7, 5, true, b));
+        b.addPiece(new Knight(7, 6, true, b));
+        b.addPiece(new Rook(7, 7, true, b));
 
-        for (int col = ChessConstants.MIN_COL; col < ChessConstants.MAX_COL; col++) {
-            addPiece(new Pawn(ChessConstants.BLACK_PAWN_START_COL, col, false, this));
-            addPiece(new Pawn(ChessConstants.WHITE_PAWN_START_COL, col, true, this));
+        for (int row = ChessConstants.BLACK_PAWN_START_COL;
+             row <= ChessConstants.WHITE_PAWN_START_COL; row++) {
+            for (int col = 0; col < 8; col++) {
+                if (row == ChessConstants.BLACK_PAWN_START_COL) {
+                    b.addPiece(new Pawn(ChessConstants.BLACK_PAWN_START_COL, col, false, b));
+                } else if (row == ChessConstants.WHITE_PAWN_START_COL) {
+                    b.addPiece(new Pawn(ChessConstants.WHITE_PAWN_START_COL, col, true, b));
+                } else {
+                    b.board[row][col] = null;
+                }
+            }
         }
     }
 

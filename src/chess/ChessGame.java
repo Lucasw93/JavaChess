@@ -12,6 +12,7 @@ public class ChessGame {
     private boolean enPassantMove;
     private ChessEngine engine;
     private boolean check;
+    private boolean checkMate;
     private boolean promotion;
 
     public ChessGame() {
@@ -24,6 +25,10 @@ public class ChessGame {
 
     public boolean hasCheck() {
         return check;
+    }
+
+    public boolean hasCheckMate() {
+        return checkMate;
     }
 
     public ChessBoard getBoard() {
@@ -96,17 +101,17 @@ public class ChessGame {
             //// test
             // System.out.println(engine.getFenString());
 
-
-            if (isCheck(newPos)) {
-                System.out.println("CHECK");
-
-                if (isCheckMate()) {
-                    System.out.println("CHECK MATE");
-                }
+            if (isCheck(newPos) && isCheckMate()) {
+                checkMate = true;
             }
             return true;
         }
         return false;
+    }
+
+    public void resetGame() {
+        ChessBoard.startpos(board);
+        whiteTurn = true;
     }
 
 
