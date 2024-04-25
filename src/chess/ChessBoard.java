@@ -88,12 +88,13 @@ public class ChessBoard {
             return String.format("%c%d", file, rank);
         }
 
-        public static Position fromChessNotation(String notation) {
-            ByteBuffer b = StandardCharsets.US_ASCII.encode(notation);
+        public Position(String notation) {
+            this(8 - (notation.charAt(1) - 48), notation.charAt(0) - 97);
 
-            int col = (b.get(0) - 97);
-            int row = (8 - (b.get(1) - 48));
-            return new Position(row, col);
+            assert notation.length() == 2 &&
+                    (notation.charAt(1) > 48 && notation.charAt(1) < 57) &&
+                    (notation.charAt(0) > 96 && notation.charAt(0) < 105)
+                    : "Invalid Chess Notation: " + notation;
         }
 
         @Override
