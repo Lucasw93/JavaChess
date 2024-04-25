@@ -2,6 +2,8 @@ package chess;
 
 import chess.pieces.*;
 
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import java.util.Arrays;
 import java.util.stream.Stream;
@@ -84,6 +86,14 @@ public class ChessBoard {
             int rank = 8 - row;
             char file = (char) ('a' + col);
             return String.format("%c%d", file, rank);
+        }
+
+        public static Position fromChessNotation(String notation) {
+            ByteBuffer b = StandardCharsets.US_ASCII.encode(notation);
+
+            int col = (b.get(0) - 97);
+            int row = (8 - (b.get(1) - 48));
+            return new Position(row, col);
         }
 
         @Override
