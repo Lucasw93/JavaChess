@@ -6,16 +6,19 @@ import chess.ChessGame;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.util.Scanner;
+import java.util.*;
 
 public class ChessEngine {
+    private final String name;
     private final Process processHandle;
     private final BufferedWriter writer;
-    private final Scanner reader;
-    private final FenStringBuilder fenString;
+    private final BufferedReader reader;
+
+//     private final FenStringBuilder fenString;
 
 
-    public ChessEngine(String pathToEngine, ChessGame game) throws IOException {
+    public ChessEngine(String pathToEngine, ChessGame game, String name) throws IOException {
+        this.name = name;
         ProcessBuilder pb = new ProcessBuilder(pathToEngine);
 
         processHandle = pb.start();
@@ -23,35 +26,74 @@ public class ChessEngine {
         InputStream stdout = processHandle.getInputStream();
 
         writer = new BufferedWriter(new OutputStreamWriter(stdin, StandardCharsets.UTF_8));
-        reader = new Scanner(stdout);
+        reader = new BufferedReader(new InputStreamReader(stdout));
 
-        fenString = new FenStringBuilder(game);
-
-        reader.nextLine();
+        do reader.read();
+        while (reader.ready());
     }
 
     public boolean isReady() {
         try {
-            writer.write("isready \n");
-            writer.flush();
-        }
-        catch (Exception e) {
-            e.printStackTrace();
-        }
+            sendCommand("isready");
 
-        if (reader.hasNext()) {
-            if (reader.nextLine().equals("readyok")) return true;
+            return reader.readLine().equals("readyok");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
-        return false;
     }
 
-    public void updateFenString(ChessBoard.Position oldPos, ChessBoard.Position newPos) {
-        fenString.update(oldPos, newPos);
+    public final static class GoResult {
+        private List<String> info;
+        private String bestmove;
+
+        public List<String> info() {
+            return info;
+        }
+        public String bestmove() {
+            return bestmove;
+        }
     }
 
-    public String getFenString() {
-        return fenString.buildFenString();
+    public GoResult go(int movetime) {
+        try {
+            sendCommand("go movetime " + movetime);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        GoResult res = new GoResult();
+        
+        res.info = reader.lines()
+                .peek(f -> {
+                    if (f.startsWith("bestmove")) res.bestmove = f;
+                })
+                .takeWhile(f -> !f.startsWith("bestmove"))
+                .toList();
+
+        return res;
     }
+
+    public void position(String moves) {
+        try {
+            sendCommand("position startpos moves " + moves);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void sendCommand(String cmd) throws IOException {
+        writer.write(cmd);
+        writer.newLine();
+        writer.flush();
+    }
+
+
+//    public void updateFenString(ChessBoard.Position oldPos, ChessBoard.Position newPos) {
+//        fenString.update(oldPos, newPos);
+//    }
+//
+//    public String getFenString() {
+//        return fenString.buildFenString();
+//    }
 }
 
 class FenStringBuilder {
@@ -71,6 +113,7 @@ class FenStringBuilder {
             updateRow(newPosition.row());
         }
     }
+
 
     public String buildFenString() {
         return String.format("%s %s %s %s \n",

@@ -1,22 +1,25 @@
 package chess;
 
-import chess.engine.ChessEngine;
 import chess.pieces.*;
 
-import java.io.IOException;
-
+import java.util.ArrayList;
+import java.util.List;
 
 public class ChessGame {
-    private final ChessBoard board;
+    private final ChessBoard board = new ChessBoard();
+    private final List<String> log = new ArrayList<>();
     private boolean whiteTurn = true;
     private boolean enPassantMove;
-    private ChessEngine engine;
     private boolean check;
     private boolean checkMate;
     private boolean promotion;
 
-    public ChessGame() {
-        this.board = new ChessBoard();
+    public ChessBoard getBoard() {
+        return board;
+    }
+
+    public List<String> log() {
+        return log;
     }
 
     public boolean hasPromotion() {
@@ -31,27 +34,6 @@ public class ChessGame {
         return checkMate;
     }
 
-    public ChessBoard getBoard() {
-        return board;
-    }
-
-    public void addEngine(String path) {
-        try {
-            engine = new ChessEngine(path, this);
-        }
-        catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public boolean hasEngine() {
-        return engine != null;
-    }
-
-    public ChessEngine getEngine() {
-        return engine;
-    }
-
     public boolean isWhiteTurn() {
         return this.whiteTurn;
     }
@@ -60,26 +42,25 @@ public class ChessGame {
         return enPassantMove;
     }
 
-    public void promote(ChessBoard.Position position, Class<?> c) {
-        board.promotePiece(c.equals(Queen.class)
-                ? new Queen(position.row(), position.col(), whiteTurn, board)
+    public void promote(ChessBoard.Position oldpos, ChessBoard.Position newpos, Class<?> c) {
+        ChessPiece p = c.equals(Queen.class)
+                ? new Queen(newpos.row(), newpos.col(), whiteTurn, board)
                 : c.equals(Rook.class)
-                ? new Rook(position.row(), position.col(), whiteTurn, board)
+                ? new Rook(newpos.row(), newpos.col(), whiteTurn, board)
                 : c.equals(Bishop.class)
-                ? new Bishop(position.row(), position.col(), whiteTurn, board)
+                ? new Bishop(newpos.row(), newpos.col(), whiteTurn, board)
                 : c.equals(Knight.class)
-                ? new Knight(position.row(), position.col(), whiteTurn, board):
-                    null);
+                ? new Knight(newpos.row(), newpos.col(), whiteTurn, board):
+                    null;
 
+        board.promotePiece(p);
         promotion = false;
         whiteTurn = !whiteTurn;
 
-        if (isCheck(position)) {
-            System.out.println("CHECK");
+        log.add(oldpos.toString() + newpos + p.toString().toLowerCase());
 
-            if (isCheckMate()) {
-                System.out.println("CHECK MATE");
-            }
+        if (isCheck(newpos) && isCheckMate()) {
+            checkMate = true;
         }
     }
 
@@ -96,10 +77,7 @@ public class ChessGame {
             }
             whiteTurn = !whiteTurn;
 
-            if (hasEngine()) engine.updateFenString(oldPos, newPos);
-
-            //// test
-            // System.out.println(engine.getFenString());
+            log.add(oldPos.toString() + newPos);
 
             if (isCheck(newPos) && isCheckMate()) {
                 checkMate = true;
@@ -133,7 +111,7 @@ public class ChessGame {
     }
 
     private boolean checkForPawnPromotion(ChessBoard.Position newPos) {
-        return promotion = (newPos.row() == 8 && !whiteTurn) || (newPos.row() == 0 && whiteTurn) &&
+        return promotion = (newPos.row() == 7 && !whiteTurn) || (newPos.row() == 0 && whiteTurn) &&
                 board.getPiece(newPos) instanceof Pawn;
     }
 

@@ -4,6 +4,7 @@ import chess.ChessBoard;
 import chess.ChessGame;
 import chess.ChessPiece;
 import chess.ChessConstants;
+import chess.engine.ChessEngine;
 import chess.pieces.Bishop;
 import chess.pieces.Knight;
 import chess.pieces.Queen;
@@ -14,7 +15,8 @@ import javax.swing.border.EtchedBorder;
 import javax.swing.event.MouseInputAdapter;
 import java.awt.*;
 import java.awt.event.*;
-import java.util.ArrayList;
+import java.io.IOException;
+import java.util.*;
 import java.util.List;
 
 
@@ -32,14 +34,25 @@ public class ChessUI extends JFrame {
 
     private ChessBoard.Position selectedSquare;
 
+    /*
+     * Engine
+     */
+    private final List<ChessEngine> engineList = new ArrayList<>();
+    private ChessEngine blackEngine;
+    private ChessEngine whiteEngine;
+    private EngineHandler engineHandler;
+
+
     public ChessUI() {
         input = inputType.Click;
 
         Dimension boardSize = new Dimension(500, 500);
 
-
-        //// test engine
-        // game.addEngine("test_chess_engines/stockfish-windows-x86-64.exe");
+        /*
+         * Test Engine
+         */
+//        addEngine("test_chess_engines/stockfish-windows-x86-64.exe", "Test engine");
+//        useEngine(false, 1);
 
 
         // setup layered pane
@@ -94,7 +107,7 @@ public class ChessUI extends JFrame {
                 int col = game.getBoard().getEnPassantPiece().col();
                 squares[row][col].setText(null);
             } else if (game.hasPromotion()) {
-                new PromotionDialog(newPosition);
+                new PromotionDialog(oldPosition, newPosition);
             }
             squares[oldPosition.row()][oldPosition.col()].setText(null);
             squares[newPosition.row()][newPosition.col()]
@@ -104,9 +117,9 @@ public class ChessUI extends JFrame {
                 if (game.hasCheckMate()) {
                     switch (getGameOverOptions()) {
                         case 0: resetGame();
-                            break;
+                            return false;
                         case 1: System.out.println("TODO");
-                            break;
+                            return false;
                     }
                 } else {
                     JOptionPane.showMessageDialog( this,
@@ -114,6 +127,7 @@ public class ChessUI extends JFrame {
                             null, JOptionPane.INFORMATION_MESSAGE);
                 }
             }
+            startTurn(game.isWhiteTurn());
         }
         return moved;
     }
@@ -186,6 +200,8 @@ public class ChessUI extends JFrame {
 
         @Override
         public void mouseClicked(MouseEvent e) {
+            if (hasEngine(game.isWhiteTurn())) return;
+
             if (selectedSquare == null) {
                 ChessPiece p = getChessPiece();
 
@@ -213,6 +229,8 @@ public class ChessUI extends JFrame {
         public void mouseEntered(MouseEvent e) {
             // display cursor has hand when in a square that can be selected or
             // if selected a square that is highlighted
+            if (hasEngine(game.isWhiteTurn())) return;
+
             if (selectedSquare == null) {
                 ChessPiece cp = getChessPiece();
 
@@ -243,7 +261,7 @@ public class ChessUI extends JFrame {
 
         private static class Highlight extends JComponent {
             @Override
-            public void paint(Graphics g) {
+            public void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g;
 
                 g2.setColor(new Color(0, 0, 0, 120));
@@ -266,6 +284,7 @@ public class ChessUI extends JFrame {
 
         @Override
         public void mousePressed(MouseEvent e) {
+            if (hasEngine(game.isWhiteTurn())) return;
 
             Component c = chessBoard.findComponentAt(e.getPoint());
             if (!(c instanceof JLabel)) return;
@@ -330,6 +349,7 @@ public class ChessUI extends JFrame {
         @Override
         public void mouseMoved(MouseEvent e) {
             // set cursor to a hand when hovering over a piece that can be moved (dragged)
+            if (hasEngine(game.isWhiteTurn())) return;
 
             Component c = chessBoard.findComponentAt(e.getPoint());
             if (!(c instanceof JLabel)) return;
@@ -358,7 +378,7 @@ public class ChessUI extends JFrame {
         ButtonGroup group = new ButtonGroup();
         Class<?> promotion = Queen.class;
 
-        public PromotionDialog(ChessBoard.Position position) {
+        public PromotionDialog(ChessBoard.Position oldpos, ChessBoard.Position newpos) {
             addRadioButton("Queen", Queen.class);
             addRadioButton("Rook", Rook.class);
             addRadioButton("Bishop", Bishop.class);
@@ -367,7 +387,7 @@ public class ChessUI extends JFrame {
             JPanel okPanel = new JPanel();
             JButton okButton = new JButton("OK");
             okButton.addActionListener(e -> {
-                game.promote(position, promotion);
+                game.promote(oldpos, newpos, promotion);
                 dispose();
             });
             okPanel.add(okButton);
@@ -416,5 +436,80 @@ public class ChessUI extends JFrame {
                 squares[row][col].setText(p == null ? null : p.getSymbol());
             }
         }
+    }
+
+
+    /*
+     * Engine
+     */
+    private class EngineHandler implements ActionListener, Runnable {
+        private ChessEngine.GoResult result;
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            // System.out.println("at, `actionPreformed()`");
+            // System.out.println(result.bestmove());
+
+            String[] bestmove = result.bestmove().split(" ");
+            String move = bestmove[1];
+
+            if (move.length() == 4) {
+                ChessBoard.Position oldpos = new ChessBoard.Position(move.substring(0, 2));
+                ChessBoard.Position newpos = new ChessBoard.Position(move.substring(2, 4));
+                moveIfLegal(oldpos, newpos);
+            } else if (move.length() == 5) {
+                /*
+                 * promotion
+                 */
+            } else {
+                throw new RuntimeException();
+            }
+
+            result = null;
+
+            if (findComponentAt(getMousePosition()) instanceof JLabel c) {
+                ChessPiece cp = ((SquareComponent) c).getPiece();
+
+                setCursor(cp != null && game.isWhiteTurn() == cp.isWhite()
+                        ? Cursor.getPredefinedCursor(Cursor.HAND_CURSOR) : Cursor.getDefaultCursor());
+            }
+        }
+
+        @Override
+        public void run() {
+            ChessEngine e = game.isWhiteTurn() ? whiteEngine : blackEngine;
+
+            e.position(String.join(" ", game.log()));
+
+            result = e.go(2000);
+
+            actionPerformed(new ActionEvent(this, ActionEvent.ACTION_PERFORMED, null));
+        }
+    }
+
+    private void startTurn(boolean white) {
+        if (hasEngine(white)) new Thread(engineHandler).start();
+    }
+
+    private boolean hasEngine(boolean white) {
+        return white ? whiteEngine != null : blackEngine != null;
+    }
+
+    private void addEngine(String path, String name) {
+        try {
+            engineList.add(new ChessEngine(path, this.game, name));
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void useEngine(boolean white, int id) {
+        if (white) {
+            whiteEngine = engineList.get(id - 1);
+        } else {
+            blackEngine = engineList.get(id - 1);
+        }
+        if (engineHandler == null) engineHandler = new EngineHandler();
     }
 }
