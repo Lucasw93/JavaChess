@@ -44,7 +44,7 @@ public class ChessUI extends JFrame {
 
 
     public ChessUI() {
-        input = inputType.Click;
+        input = inputType.Drag;
 
         Dimension boardSize = new Dimension(500, 500);
 
@@ -60,15 +60,16 @@ public class ChessUI extends JFrame {
 
         layeredPane.setPreferredSize(boardSize);
         layeredPane.add(chessBoard, JLayeredPane.DEFAULT_LAYER);
-        if (input == inputType.Drag) {
-            MouseHandlerDragInput mHandle = new MouseHandlerDragInput(layeredPane);
-
-            layeredPane.addMouseMotionListener(mHandle);
-            layeredPane.addMouseListener(mHandle);
-        }
 
 
         // setup chessboard
+        if (input == inputType.Drag) {
+            MouseHandlerDragInput mHandler = new MouseHandlerDragInput(getLayeredPane());
+
+            chessBoard.addMouseMotionListener(mHandler);
+            chessBoard.addMouseListener(mHandler);
+        }
+
         chessBoard.setPreferredSize(boardSize);
         chessBoard.setBounds(0, 0, boardSize.width, boardSize.height);
         List<SquareComponent> clickInputHlList = input == inputType.Click ? new ArrayList<>() : null;
@@ -76,8 +77,7 @@ public class ChessUI extends JFrame {
         for (int row = ChessConstants.MIN_ROW; row < ChessConstants.MAX_ROW; row++) {
             for (int col = ChessConstants.MIN_COL; col < ChessConstants.MAX_COL; col++) {
                 SquareComponent square = input == inputType.Click
-                        ? new SquareComponent(row, col, clickInputHlList)
-                        : new SquareComponent(row, col);
+                        ? new SquareComponent(row, col, clickInputHlList) : new SquareComponent(row, col);
 
                 ChessPiece piece = game.getBoard().getPiece(row, col);
 
@@ -90,11 +90,8 @@ public class ChessUI extends JFrame {
         selectedSquare = null;
 
         pack();
-        Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
-        setLocation((screen.width / 2) - (getWidth() / 2),
-                (screen.height / 2) - (getHeight() / 2));
-
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLocationByPlatform(true);
         setVisible(true);
     }
 
@@ -187,7 +184,7 @@ public class ChessUI extends JFrame {
 
     private class MouseHandlerClickInput extends MouseInputAdapter {
         final ChessBoard.Position position;
-        List<SquareComponent> hlSquares;
+        final List<SquareComponent> hlSquares;
 
         MouseHandlerClickInput(int row, int col, List<SquareComponent> l) {
             position = new ChessBoard.Position(row, col);
@@ -287,17 +284,18 @@ public class ChessUI extends JFrame {
             if (hasEngine(game.isWhiteTurn())) return;
 
             Component c = chessBoard.findComponentAt(e.getPoint());
-            if (!(c instanceof JLabel)) return;
 
-            ChessPiece cp = ((SquareComponent) c).getPiece();
+            if (c instanceof SquareComponent) {
+                ChessPiece cp = ((SquareComponent) c).getPiece();
 
-            if (cp != null && game.isWhiteTurn() == cp.isWhite()) {
-                dragPiece.setLocation(e.getX() - 70, e.getY() - 70);
+                if (cp != null && game.isWhiteTurn() == cp.isWhite()) {
+                    dragPiece.setLocation(e.getX() - 70, e.getY() - 70);
 
-                dragPiece.setText(cp.getSymbol());
-                dragPiece.setVisible(true);
+                    dragPiece.setText(cp.getSymbol());
+                    dragPiece.setVisible(true);
 
-                selectedSquare = cp.getPosition();
+                    selectedSquare = cp.getPosition();
+                }
             }
         }
 
@@ -305,33 +303,35 @@ public class ChessUI extends JFrame {
         public void mouseDragged(MouseEvent e) {
             if (selectedSquare == null) return;
 
+            dragPiece.setLocation(e.getX() - 70, e.getY() - 70);
+
             Component c = chessBoard.findComponentAt(e.getPoint());
 
-            if (c instanceof JLabel) {
+            if (c == currentSquare) return;
+
+            if (c instanceof SquareComponent) {
                 currentSquare.setBorder(BorderFactory.createEmptyBorder());
                 currentSquare = (SquareComponent) c;
+                currentSquare.setBorder(BorderFactory.createLineBorder(Color.GREEN, 4));
 
-                /* feedback only if square is a valid move */
-                // if (game.getBoard().getPiece(selectedSquare).isValidMove(currentSquare.getPosition()))
+                /* feedback only if square is a legal move */
+                // if (game.getBoard().getPiece(selectedSquare).isLegalMove(currentSquare.getPosition()))
 
                 /* feedback for every square except pieces of the same color */
-                // if (currentSquare.getPiece() == null || game.getBoard().getPiece(selectedSquare).isWhite() != currentSquare.getPiece().isWhite())
-
-                currentSquare.setBorder(BorderFactory.createLineBorder(Color.GREEN, 4));
+                // if (currentSquare.getPiece() == null ||
+                //         game.getBoard().getPiece(selectedSquare).isWhite() != currentSquare.getPiece().isWhite())
             }
-            dragPiece.setLocation(e.getX() - 70, e.getY() - 70);
         }
 
         @Override
         public void mouseReleased(MouseEvent e) {
             if (selectedSquare == null) return;
 
-            Component c = chessBoard.findComponentAt(e.getPoint());
-
-            dragPiece.setVisible(false);
             mouseMoved(e);
 
-            if (c instanceof JLabel) {
+            Component c = chessBoard.findComponentAt(e.getPoint());
+
+            if (c instanceof SquareComponent) {
                 SquareComponent square = (SquareComponent) c;
 
                 boolean moved = moveIfLegal(selectedSquare, square.getPosition());
@@ -344,6 +344,7 @@ public class ChessUI extends JFrame {
             }
             currentSquare.setBorder(BorderFactory.createEmptyBorder());
             selectedSquare = null;
+            dragPiece.setVisible(false);
         }
 
         @Override
@@ -352,13 +353,14 @@ public class ChessUI extends JFrame {
             if (hasEngine(game.isWhiteTurn())) return;
 
             Component c = chessBoard.findComponentAt(e.getPoint());
-            if (!(c instanceof JLabel)) return;
 
-            ChessPiece cp = ((SquareComponent) c).getPiece();
+            if (c instanceof SquareComponent) {
+                ChessPiece cp = ((SquareComponent) c).getPiece();
 
-            setCursor(cp != null && game.isWhiteTurn() == cp.isWhite()
-                ? Cursor.getPredefinedCursor(Cursor.HAND_CURSOR) : Cursor.getDefaultCursor());
+                setCursor(cp != null && game.isWhiteTurn() == cp.isWhite()
+                        ? Cursor.getPredefinedCursor(Cursor.HAND_CURSOR) : Cursor.getDefaultCursor());
             }
+        }
 
         private static class DragComponent extends JLabel {
             public DragComponent() {
@@ -464,10 +466,11 @@ public class ChessUI extends JFrame {
             } else {
                 throw new RuntimeException();
             }
-
             result = null;
 
-            if (findComponentAt(getMousePosition()) instanceof JLabel c) {
+            Component c = findComponentAt(getMousePosition());
+
+            if (c instanceof SquareComponent) {
                 ChessPiece cp = ((SquareComponent) c).getPiece();
 
                 setCursor(cp != null && game.isWhiteTurn() == cp.isWhite()
