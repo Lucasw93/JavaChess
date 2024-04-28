@@ -6,14 +6,12 @@ public interface ChessConstants {
     public static final int MIN_ROW = 0;
     public static final int MIN_COL = 0;
 
-    public static final int WHITE_PAWN_START_COL = 6;
-    public static final int BLACK_PAWN_START_COL = 1;
+    public static final int WHITE_PAWN_RANK = 6;
+    public static final int BLACK_PAWN_RANK = 1;
 
-//    public static final int WHITE_KNIGHT_START_ROW = 4;
-//    public static final int WHITE_KNIGHT_START_COL = 4;
-//
-//    public static final int BLACK_KNIGHT_START_ROW = ;
-//    public static final int BLACK_KNIGHT_START_COL = 0;
+    public static final int WHITE_HOME_RANK = 7;
+    public static final int BLACK_HOME_RANK = 0;
+
 
 
     public static final int PAWN_VALUE   = 1;

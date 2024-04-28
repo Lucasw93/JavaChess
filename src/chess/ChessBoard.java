@@ -2,8 +2,6 @@ package chess;
 
 import chess.pieces.*;
 
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import java.util.Arrays;
 import java.util.stream.Stream;
@@ -195,13 +193,13 @@ public class ChessBoard {
         b.addPiece(new Knight(7, 6, true, b));
         b.addPiece(new Rook(7, 7, true, b));
 
-        for (int row = ChessConstants.BLACK_PAWN_START_COL;
-             row <= ChessConstants.WHITE_PAWN_START_COL; row++) {
+        for (int row = ChessConstants.BLACK_PAWN_RANK;
+             row <= ChessConstants.WHITE_PAWN_RANK; row++) {
             for (int col = 0; col < 8; col++) {
-                if (row == ChessConstants.BLACK_PAWN_START_COL) {
-                    b.addPiece(new Pawn(ChessConstants.BLACK_PAWN_START_COL, col, false, b));
-                } else if (row == ChessConstants.WHITE_PAWN_START_COL) {
-                    b.addPiece(new Pawn(ChessConstants.WHITE_PAWN_START_COL, col, true, b));
+                if (row == ChessConstants.BLACK_PAWN_RANK) {
+                    b.addPiece(new Pawn(ChessConstants.BLACK_PAWN_RANK, col, false, b));
+                } else if (row == ChessConstants.WHITE_PAWN_RANK) {
+                    b.addPiece(new Pawn(ChessConstants.WHITE_PAWN_RANK, col, true, b));
                 } else {
                     b.board[row][col] = null;
                 }

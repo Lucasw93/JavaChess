@@ -111,13 +111,14 @@ public class ChessGame {
     }
 
     private boolean checkForPawnPromotion(ChessBoard.Position newPos) {
-        return promotion = (newPos.row() == 7 && !whiteTurn) || (newPos.row() == 0 && whiteTurn) &&
+        return promotion = (newPos.row() == ChessConstants.WHITE_HOME_RANK && !whiteTurn) ||
+                (newPos.row() == ChessConstants.BLACK_HOME_RANK && whiteTurn) &&
                 board.getPiece(newPos) instanceof Pawn;
     }
 
     private void updateEnPassantSquare(int startRow, ChessBoard.Position endPos) {
-        if (startRow == ChessConstants.BLACK_PAWN_START_COL ||
-                startRow == ChessConstants.WHITE_PAWN_START_COL) {
+        if (startRow == ChessConstants.BLACK_PAWN_RANK ||
+                startRow == ChessConstants.WHITE_PAWN_RANK) {
 
             ChessPiece p = getBoard().getPiece(endPos);
 

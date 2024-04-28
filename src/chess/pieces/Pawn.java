@@ -15,8 +15,8 @@ public class Pawn extends ChessPiece {
 
     private boolean isStartingPosition() {
         return this.isWhite()
-                ? this.getPosition().row() == ChessConstants.WHITE_PAWN_START_COL
-                : this.getPosition().row() == ChessConstants.BLACK_PAWN_START_COL;
+                ? this.getPosition().row() == ChessConstants.WHITE_PAWN_RANK
+                : this.getPosition().row() == ChessConstants.BLACK_PAWN_RANK;
     }
 
     private final int forward = isWhite() ? -1 : 1;
