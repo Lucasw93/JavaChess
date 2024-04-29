@@ -111,8 +111,8 @@ public class ChessGame {
     }
 
     private boolean checkForPawnPromotion(ChessBoard.Position newPos) {
-        return promotion = (newPos.row() == ChessConstants.WHITE_HOME_RANK && !whiteTurn) ||
-                (newPos.row() == ChessConstants.BLACK_HOME_RANK && whiteTurn) &&
+        return promotion = ((newPos.row() == ChessConstants.WHITE_HOME_RANK && !whiteTurn) ||
+                (newPos.row() == ChessConstants.BLACK_HOME_RANK && whiteTurn)) &&
                 board.getPiece(newPos) instanceof Pawn;
     }
 
