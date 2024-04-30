@@ -18,6 +18,7 @@ import java.awt.event.*;
 import java.io.IOException;
 import java.util.*;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 
 /* for drop and drag style of input or click */
@@ -441,69 +442,60 @@ public class ChessUI extends JFrame {
     }
 
 
-    /*
-     * Engine
-     */
-    private class EngineHandler implements ActionListener, Runnable {
-        private ChessEngine.GoResult result;
-        private String error;
-
-        public boolean hasError() {
-            return error != null;
-        }
-
-        public String error() {
-            return error;
-        }
-
+    private class EngineHandler extends SwingWorker<ChessEngine.GoResult, Void> {
         @Override
-        public void actionPerformed(ActionEvent e) {
-            if (result == null) return;
-
-            String[] bestmove = result.bestmove().split(" ");
-            String move = bestmove[1];
-
-            if (move.length() == 4) {
-                ChessBoard.Position oldpos = new ChessBoard.Position(move.substring(0, 2));
-                ChessBoard.Position newpos = new ChessBoard.Position(move.substring(2, 4));
-                moveIfLegal(oldpos, newpos);
-            } else if (move.length() == 5) {
-                /*
-                 * promotion
-                 */
-            } else {
-                throw new RuntimeException();
-            }
-            result = null;
-
-            Component c = findComponentAt(getMousePosition());
-
-            if (c instanceof SquareComponent) {
-                ChessPiece cp = ((SquareComponent) c).getPiece();
-
-                setCursor(cp != null && game.isWhiteTurn() == cp.isWhite()
-                        ? Cursor.getPredefinedCursor(Cursor.HAND_CURSOR) : Cursor.getDefaultCursor());
-            }
-        }
-
-        @Override
-        public void run() {
-            ChessEngine engine = game.isWhiteTurn() ? whiteEngine : blackEngine;
+        protected void done() {
             try {
-                engine.position(String.join(" ", game.log()));
+                ChessEngine.GoResult result = get();
 
-                result = engine.go(2000);
+                String[] bestmove = result.bestmove().split(" ");
 
-                actionPerformed(new ActionEvent(this, ActionEvent.ACTION_PERFORMED, null));
-            } catch (IOException e) {
-                // todo, show the error message in the EDT
-                error = e.getMessage();
+                String move = bestmove[1];
+
+                if (move.length() == 4) {
+                    ChessBoard.Position oldpos = new ChessBoard.Position(move.substring(0, 2));
+                    ChessBoard.Position newpos = new ChessBoard.Position(move.substring(2, 4));
+                    moveIfLegal(oldpos, newpos);
+                } else if (move.length() == 5) {
+                    /*
+                     * promotion
+                     */
+                } else {
+                    throw new RuntimeException();
+                }
+
+                Component c = findComponentAt(getMousePosition());
+
+                if (c instanceof SquareComponent) {
+                    ChessPiece cp = ((SquareComponent) c).getPiece();
+
+                    setCursor(cp != null && game.isWhiteTurn() == cp.isWhite()
+                            ? Cursor.getPredefinedCursor(Cursor.HAND_CURSOR) : Cursor.getDefaultCursor());
+                }
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            } catch (ExecutionException e) {
+                Throwable cause = e.getCause();
+
+                String why = cause == null ? e.getMessage() : cause.getMessage();
+
+                JOptionPane.showMessageDialog(ChessUI.this,
+                        why, "ERROR", JOptionPane.ERROR_MESSAGE);
             }
+        }
+
+        @Override
+        public ChessEngine.GoResult doInBackground() throws IOException {
+            ChessEngine engine = game.isWhiteTurn() ? whiteEngine : blackEngine;
+
+            engine.position(String.join(" ", game.log()));
+
+            return engine.go(2000);
         }
     }
 
     private void startTurn(boolean white) {
-        if (hasEngine(white)) new Thread(engineHandler).start();
+        if (hasEngine(white)) new EngineHandler().execute();
     }
 
     private boolean hasEngine(boolean white) {
