@@ -10,36 +10,48 @@ import java.util.*;
 
 public class ChessEngine {
     private final String name;
-    private final Process processHandle;
+    private final List<String> options;
+    private final Process process;
     private final BufferedWriter writer;
     private final BufferedReader reader;
 
-//     private final FenStringBuilder fenString;
 
+    public ChessEngine(String pathToEngine, ChessGame game) throws IOException {
+        process = new ProcessBuilder(pathToEngine).start();
 
-    public ChessEngine(String pathToEngine, ChessGame game, String name) throws IOException {
-        this.name = name;
-        ProcessBuilder pb = new ProcessBuilder(pathToEngine);
+        OutputStream pipedIn = process.getOutputStream();
+        InputStream pipedOut = process.getInputStream();
 
-        processHandle = pb.start();
-        OutputStream stdin = processHandle.getOutputStream();
-        InputStream stdout = processHandle.getInputStream();
+        writer = new BufferedWriter(new OutputStreamWriter(pipedIn));
+        reader = new BufferedReader(new InputStreamReader(pipedOut));
 
-        writer = new BufferedWriter(new OutputStreamWriter(stdin, StandardCharsets.UTF_8));
-        reader = new BufferedReader(new InputStreamReader(stdout));
+        String[] tmp = new String[1];
 
-        do reader.read();
-        while (reader.ready());
+        sendCommand("uci");
+        options = reader.lines()
+                .peek(f -> {
+                    if (f.startsWith("id name")) {
+                        tmp[0] = f.substring(7).stripLeading();
+                    }
+                })
+                .takeWhile(f -> !f.equals("uciok"))
+                .filter(f -> f.startsWith("option"))
+                .toList();
+
+        name = tmp[0];
     }
 
-    public boolean isReady() {
-        try {
-            sendCommand("isready");
+    public String name() {
+        return name;
+    }
+    public List<String> options() {
+        return options;
+    }
 
-            return reader.readLine().equals("readyok");
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+    public boolean isready() throws IOException {
+        sendCommand("isready");
+
+        return reader.readLine().equals("readyok");
     }
 
     public final static class GoResult {
@@ -54,12 +66,9 @@ public class ChessEngine {
         }
     }
 
-    public GoResult go(int movetime) {
-        try {
-            sendCommand("go movetime " + movetime);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+    public GoResult go(int movetime) throws IOException {
+        sendCommand("go movetime " + movetime);
+
         GoResult res = new GoResult();
         
         res.info = reader.lines()
@@ -72,12 +81,8 @@ public class ChessEngine {
         return res;
     }
 
-    public void position(String moves) {
-        try {
-            sendCommand("position startpos moves " + moves);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+    public void position(String moves) throws IOException {
+        sendCommand("position startpos moves " + moves);
     }
 
     private void sendCommand(String cmd) throws IOException {
@@ -85,16 +90,8 @@ public class ChessEngine {
         writer.newLine();
         writer.flush();
     }
-
-
-//    public void updateFenString(ChessBoard.Position oldPos, ChessBoard.Position newPos) {
-//        fenString.update(oldPos, newPos);
-//    }
-//
-//    public String getFenString() {
-//        return fenString.buildFenString();
-//    }
 }
+
 
 class FenStringBuilder {
     private String[] fenPosition;

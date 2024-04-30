@@ -52,7 +52,7 @@ public class ChessUI extends JFrame {
          * Test Engine
          */
 //        addEngine("test_chess_engines/stockfish-windows-x86-64.exe", "Test engine");
-//        useEngine(false, 1);
+//        useEngine(false, 0);
 
 
         // setup layered pane
@@ -446,11 +446,19 @@ public class ChessUI extends JFrame {
      */
     private class EngineHandler implements ActionListener, Runnable {
         private ChessEngine.GoResult result;
+        private String error;
+
+        public boolean hasError() {
+            return error != null;
+        }
+
+        public String error() {
+            return error;
+        }
 
         @Override
         public void actionPerformed(ActionEvent e) {
-            // System.out.println("at, `actionPreformed()`");
-            // System.out.println(result.bestmove());
+            if (result == null) return;
 
             String[] bestmove = result.bestmove().split(" ");
             String move = bestmove[1];
@@ -480,13 +488,17 @@ public class ChessUI extends JFrame {
 
         @Override
         public void run() {
-            ChessEngine e = game.isWhiteTurn() ? whiteEngine : blackEngine;
+            ChessEngine engine = game.isWhiteTurn() ? whiteEngine : blackEngine;
+            try {
+                engine.position(String.join(" ", game.log()));
 
-            e.position(String.join(" ", game.log()));
+                result = engine.go(2000);
 
-            result = e.go(2000);
-
-            actionPerformed(new ActionEvent(this, ActionEvent.ACTION_PERFORMED, null));
+                actionPerformed(new ActionEvent(this, ActionEvent.ACTION_PERFORMED, null));
+            } catch (IOException e) {
+                // todo, show the error message in the EDT
+                error = e.getMessage();
+            }
         }
     }
 
@@ -500,7 +512,7 @@ public class ChessUI extends JFrame {
 
     private void addEngine(String path, String name) {
         try {
-            engineList.add(new ChessEngine(path, this.game, name));
+            engineList.add(new ChessEngine(path, this.game));
         }
         catch (IOException e) {
             e.printStackTrace();
@@ -509,9 +521,9 @@ public class ChessUI extends JFrame {
 
     private void useEngine(boolean white, int id) {
         if (white) {
-            whiteEngine = engineList.get(id - 1);
+            whiteEngine = engineList.get(id);
         } else {
-            blackEngine = engineList.get(id - 1);
+            blackEngine = engineList.get(id);
         }
         if (engineHandler == null) engineHandler = new EngineHandler();
     }
