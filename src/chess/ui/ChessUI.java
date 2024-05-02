@@ -11,6 +11,7 @@ import chess.pieces.Queen;
 import chess.pieces.Rook;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import javax.swing.border.EtchedBorder;
 import javax.swing.event.MouseInputAdapter;
 import java.awt.*;
@@ -49,11 +50,8 @@ public class ChessUI extends JFrame {
 
         Dimension boardSize = new Dimension(500, 500);
 
-        /*
-         * Test Engine
-         */
-//        addEngine("test_chess_engines/stockfish-windows-x86-64.exe", "Test engine");
-//        useEngine(false, 0);
+
+        setJMenuBar(new MenuUI());
 
 
         // setup layered pane
@@ -61,6 +59,10 @@ public class ChessUI extends JFrame {
 
         layeredPane.setPreferredSize(boardSize);
         layeredPane.add(chessBoard, JLayeredPane.DEFAULT_LAYER);
+
+
+//        add(chessBoard);
+//        setPreferredSize(boardSize);
 
 
         // setup chessboard
@@ -109,7 +111,7 @@ public class ChessUI extends JFrame {
             }
             squares[oldPosition.row()][oldPosition.col()].setText(null);
             squares[newPosition.row()][newPosition.col()]
-                        .setText(game.getBoard().getPiece(newPosition).getSymbol());
+                    .setText(game.getBoard().getPiece(newPosition).getSymbol());
 
             if (game.hasCheck()) {
                 if (game.hasCheckMate()) {
@@ -233,10 +235,10 @@ public class ChessUI extends JFrame {
                 ChessPiece cp = getChessPiece();
 
                 setCursor(cp != null && cp.isWhite() == game.isWhiteTurn()
-                    ? Cursor.getPredefinedCursor(Cursor.HAND_CURSOR) : Cursor.getDefaultCursor());
+                        ? Cursor.getPredefinedCursor(Cursor.HAND_CURSOR) : Cursor.getDefaultCursor());
             } else {
                 setCursor(hlSquares.contains(e.getComponent())
-                    ? Cursor.getPredefinedCursor(Cursor.HAND_CURSOR) : Cursor.getDefaultCursor());
+                        ? Cursor.getPredefinedCursor(Cursor.HAND_CURSOR) : Cursor.getDefaultCursor());
             }
         }
 
@@ -502,12 +504,16 @@ public class ChessUI extends JFrame {
         return white ? whiteEngine != null : blackEngine != null;
     }
 
-    private void addEngine(String path, String name) {
+    private boolean addEngine(String path, Component parentComponent) {
         try {
-            engineList.add(new ChessEngine(path, this.game));
-        }
-        catch (IOException e) {
-            e.printStackTrace();
+            engineList.add(new ChessEngine(path, game));
+            return true;
+        } catch (IOException e) {
+            JOptionPane.showMessageDialog(
+                    parentComponent,
+                    e.getMessage(), "ERROR",
+                    JOptionPane.ERROR_MESSAGE);
+            return false;
         }
     }
 
@@ -518,5 +524,233 @@ public class ChessUI extends JFrame {
             blackEngine = engineList.get(id);
         }
         if (engineHandler == null) engineHandler = new EngineHandler();
+    }
+
+
+    /*
+     * Menu bar
+     * todo replace
+     *   dispose();
+     *   new EngineListDialog();
+     */
+    private class MenuUI extends JMenuBar {
+        JMenu menu;
+        JMenuItem item;
+
+        MenuUI() {
+            menu = new JMenu("Menu");
+
+            // chess engine list
+            item = new JMenuItem("Engine List");
+            item.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_1, InputEvent.ALT_DOWN_MASK));
+            item.getAccessibleContext().setAccessibleDescription("chess engine list ");
+            item.addActionListener(e -> new EngineListDialog());
+            menu.add(item);
+
+            // add engine popup
+            item = new JMenuItem("Add Engine");
+            item.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_2, InputEvent.ALT_DOWN_MASK));
+            item.addActionListener(e -> {
+                if (new AddChessEngineDialog().OK) {
+                    String name = engineList.getLast().name();
+                    int id = engineList.size() + 1;
+
+                    String message = "Added Chess Engine: " + name + "  -  [ ID: " + id + " ]";
+                    String[] options = {"ENGINE LIST", "  CLOSE  "};
+                    if (JOptionPane.showOptionDialog(ChessUI.this,
+                            message, null,
+                            JOptionPane.YES_NO_OPTION,
+                            JOptionPane.INFORMATION_MESSAGE, null,
+                            options, options[1]) == 0)
+                    {
+                        new EngineListDialog();
+                    }
+                }
+            });
+            menu.add(item);
+
+            add(menu);
+        }
+    }
+
+    private class EngineListDialog extends JDialog {
+        JButton button;
+        JPanel panel;
+        public EngineListDialog() {
+            // north panel -- current engine for black/white
+            panel = new JPanel();
+            panel.add(Box.createVerticalStrut(25));
+            panel.setLayout(new BoxLayout(panel, BoxLayout.PAGE_AXIS));
+            panel.add(selectEnginePanel(true));
+            panel.add(Box.createVerticalStrut(5));
+            panel.add(selectEnginePanel(false));
+            panel.add(Box.createVerticalStrut(5));
+            panel.add(new JSeparator());
+            panel.add(Box.createVerticalStrut(25));
+            add(panel, BorderLayout.NORTH);
+
+            // center panel -- engine list
+            panel = new JPanel();
+            panel.setLayout(new GridBagLayout());
+            GridBagConstraints c = new GridBagConstraints();
+
+            c.insets = new Insets(5, 5, 5, 5);
+            c.fill = GridBagConstraints.HORIZONTAL;
+
+            if (!engineList.isEmpty()) {
+                c.gridy = 0;
+
+                c.gridx = 0;
+                panel.add(new JLabel("Engine ID"), c);
+
+                c.gridx = 1;
+                c.ipadx = 50;
+                panel.add(new JLabel("Engine Name"), c);
+
+                c.ipadx = 0;
+                int id = 0;
+                while (id < engineList.size()) {
+                    ChessEngine e = engineList.get(id++);
+                    c.gridy = id;
+
+                    c.gridx = 0;
+                    panel.add(new JLabel("# " + id), c);
+
+                    c.gridx = 1;
+                    panel.add(new JLabel(e.name()), c);
+
+                    button = new JButton("SETTINGS");
+                    c.gridx = 2;
+                    c.ipadx = 0;
+                    panel.add(button, c);
+
+                    button = new JButton("REMOVE");
+                    c.gridx = 3;
+                    panel.add(button, c);
+                }
+            }
+            add(panel, BorderLayout.CENTER);
+
+            // southpanel -- bottom buttons
+            panel = new JPanel();
+            panel.setBorder(new EmptyBorder(50, 0, 0, 0));
+
+            button = new JButton("ADD ENGINE");
+            button.addActionListener(e -> {
+                if (new AddChessEngineDialog().OK) {
+                    dispose();
+                    new EngineListDialog();
+                }
+            });
+            panel.add(button);
+
+            button = new JButton("  CLOSE   ");
+            button.addActionListener(e -> dispose());
+            panel.add(button);
+
+            add(panel, BorderLayout.SOUTH);
+
+            pack();
+            setModalityType(ModalityType.TOOLKIT_MODAL);
+            setLocationRelativeTo(ChessUI.this);
+            setVisible(true);
+        }
+
+        private JPanel selectEnginePanel(boolean white) {
+            JButton button;
+            JPanel panel = new JPanel();
+            panel.setLayout(new BoxLayout(panel, BoxLayout.X_AXIS));
+            panel.add(Box.createHorizontalStrut(5));
+            panel.add(new JLabel(white ? "White: " : "Black: "));
+
+            int id;
+            if (hasEngine(white)) {
+                id = engineList.indexOf(white ? whiteEngine : blackEngine) + 1;
+                String name = white ? whiteEngine.name() : blackEngine.name();
+                panel.add(new JLabel("  " + name + "  -  [ ID: # " + id + " ]"));
+
+                panel.add(Box.createHorizontalGlue());
+                button = new JButton("REMOVE");
+                button.addActionListener(e -> {
+                    if (white) {
+                        whiteEngine = null;
+                    } else {
+                        blackEngine = null;
+                    }
+                    dispose();
+                    new EngineListDialog();
+                });
+                panel.add(button);
+            } else {
+                JComboBox<String> comboBox = new JComboBox<>();
+                comboBox.addItem(" ENGINE ID ");
+                id = 0;
+                while (id++ < engineList.size()) comboBox.addItem("# " + id);
+                panel.add(comboBox);
+
+                panel.add(Box.createHorizontalGlue());
+                button = new JButton("   USE   ");
+                button.addActionListener(e -> {
+                    int sel = comboBox.getSelectedIndex();
+                    if (sel > 0) {
+                        if (white) {
+                            whiteEngine = engineList.get(sel - 1);
+                        } else {
+                            blackEngine = engineList.get(sel - 1);
+                        }
+                        dispose();
+                        new EngineListDialog();
+                    }
+                });
+                panel.add(button);
+            }
+            panel.add(Box.createHorizontalStrut(5));
+            return panel;
+        }
+    }
+
+    private class  AddChessEngineDialog extends JDialog {
+        private JPanel panel;
+        private JButton button;
+        private boolean OK;
+
+        public AddChessEngineDialog() {
+            panel = new JPanel();
+            panel.add(new JLabel("Add a Chess Engine"));
+            add(panel, BorderLayout.NORTH);
+
+            panel = new JPanel();
+            panel.add(new JLabel("Path: "));
+            JTextField pathBox = new JTextField(35);
+            panel.add(pathBox);
+            button = new JButton("PASTE");
+            button.addActionListener(e -> pathBox.paste());
+            panel.add(button);
+            add(panel, BorderLayout.CENTER);
+
+            // south panel
+
+            // ok button
+            panel = new JPanel();
+            panel.setBorder(new EmptyBorder(25, 0, 0, 0));
+            button = new JButton("  OK  ");
+            button.addActionListener(f -> {
+                OK = addEngine(pathBox.getText(), this);
+                if (OK) dispose();
+            });
+            panel.add(button);
+
+            // cancel button
+            button = new JButton("CANCEL");
+            button.addActionListener(e -> dispose());
+            panel.add(button);
+            add(panel, BorderLayout.SOUTH);
+
+            pack();
+            setModalityType(ModalityType.TOOLKIT_MODAL);
+            setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+            setLocationRelativeTo(ChessUI.this);
+            setVisible(true);
+        }
     }
 }
