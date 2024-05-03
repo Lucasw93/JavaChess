@@ -529,9 +529,6 @@ public class ChessUI extends JFrame {
 
     /*
      * Menu bar
-     * todo replace
-     *   dispose();
-     *   new EngineListDialog();
      */
     private class MenuUI extends JMenuBar {
         JMenu menu;
@@ -573,25 +570,48 @@ public class ChessUI extends JFrame {
         }
     }
 
-    private class EngineListDialog extends JDialog {
+    private class EngineListDialog extends JDialog implements ActionListener {
+        private static final String UPDATED_ENGINE_LIST = "UPDATED_ENGINE_LIST";
         JButton button;
-        JPanel panel;
+        JPanel southPanel;
+        JPanel northPanel;
+        JPanel centerPanel;
         public EngineListDialog() {
             // north panel -- current engine for black/white
-            panel = new JPanel();
-            panel.add(Box.createVerticalStrut(25));
-            panel.setLayout(new BoxLayout(panel, BoxLayout.PAGE_AXIS));
-            panel.add(selectEnginePanel(true));
-            panel.add(Box.createVerticalStrut(5));
-            panel.add(selectEnginePanel(false));
-            panel.add(Box.createVerticalStrut(5));
-            panel.add(new JSeparator());
-            panel.add(Box.createVerticalStrut(25));
-            add(panel, BorderLayout.NORTH);
+            northPanel = setNorthPanel();
+            add(northPanel, BorderLayout.NORTH);
 
             // center panel -- engine list
-            panel = new JPanel();
-            panel.setLayout(new GridBagLayout());
+            centerPanel = setCenterPanel();
+            add(centerPanel, BorderLayout.CENTER);
+
+            // southpanel -- bottom buttons
+            southPanel = new JPanel();
+            southPanel.setBorder(new EmptyBorder(50, 0, 0, 0));
+
+            button = new JButton("ADD ENGINE");
+            button.addActionListener(e -> {
+                if (new AddChessEngineDialog().OK) {
+                    actionPerformed(new ActionEvent(
+                            this, ActionEvent.ACTION_PERFORMED, UPDATED_ENGINE_LIST));
+                }
+            });
+            southPanel.add(button);
+
+            button = new JButton("  CLOSE   ");
+            button.addActionListener(e -> dispose());
+            southPanel.add(button);
+            add(southPanel, BorderLayout.SOUTH);
+
+            pack();
+            setModalityType(ModalityType.TOOLKIT_MODAL);
+            setLocationRelativeTo(ChessUI.this);
+            setVisible(true);
+        }
+
+        private JPanel setCenterPanel() {
+            JPanel retPanel = new JPanel();
+            retPanel.setLayout(new GridBagLayout());
             GridBagConstraints c = new GridBagConstraints();
 
             c.insets = new Insets(5, 5, 5, 5);
@@ -601,11 +621,11 @@ public class ChessUI extends JFrame {
                 c.gridy = 0;
 
                 c.gridx = 0;
-                panel.add(new JLabel("Engine ID"), c);
+                retPanel.add(new JLabel("Engine ID"), c);
 
                 c.gridx = 1;
                 c.ipadx = 50;
-                panel.add(new JLabel("Engine Name"), c);
+                retPanel.add(new JLabel("Engine Name"), c);
 
                 c.ipadx = 0;
                 int id = 0;
@@ -614,62 +634,39 @@ public class ChessUI extends JFrame {
                     c.gridy = id;
 
                     c.gridx = 0;
-                    panel.add(new JLabel("# " + id), c);
+                    retPanel.add(new JLabel("# " + id), c);
 
                     c.gridx = 1;
-                    panel.add(new JLabel(e.name()), c);
+                    retPanel.add(new JLabel(e.name()), c);
 
                     button = new JButton("SETTINGS");
                     c.gridx = 2;
                     c.ipadx = 0;
-                    panel.add(button, c);
+                    retPanel.add(button, c);
 
                     button = new JButton("REMOVE");
                     c.gridx = 3;
-                    panel.add(button, c);
+                    retPanel.add(button, c);
                 }
             }
-            add(panel, BorderLayout.CENTER);
 
-            // southpanel -- bottom buttons
-            panel = new JPanel();
-            panel.setBorder(new EmptyBorder(50, 0, 0, 0));
-
-            button = new JButton("ADD ENGINE");
-            button.addActionListener(e -> {
-                if (new AddChessEngineDialog().OK) {
-                    dispose();
-                    new EngineListDialog();
-                }
-            });
-            panel.add(button);
-
-            button = new JButton("  CLOSE   ");
-            button.addActionListener(e -> dispose());
-            panel.add(button);
-
-            add(panel, BorderLayout.SOUTH);
-
-            pack();
-            setModalityType(ModalityType.TOOLKIT_MODAL);
-            setLocationRelativeTo(ChessUI.this);
-            setVisible(true);
+            return retPanel;
         }
 
         private JPanel selectEnginePanel(boolean white) {
             JButton button;
-            JPanel panel = new JPanel();
-            panel.setLayout(new BoxLayout(panel, BoxLayout.X_AXIS));
-            panel.add(Box.createHorizontalStrut(5));
-            panel.add(new JLabel(white ? "White: " : "Black: "));
+            JPanel retPanel = new JPanel();
+            retPanel.setLayout(new BoxLayout(retPanel, BoxLayout.X_AXIS));
+            retPanel.add(Box.createHorizontalStrut(5));
+            retPanel.add(new JLabel(white ? "White: " : "Black: "));
 
             int id;
             if (hasEngine(white)) {
                 id = engineList.indexOf(white ? whiteEngine : blackEngine) + 1;
                 String name = white ? whiteEngine.name() : blackEngine.name();
-                panel.add(new JLabel("  " + name + "  -  [ ID: # " + id + " ]"));
+                retPanel.add(new JLabel("  " + name + "  -  [ ID: # " + id + " ]"));
 
-                panel.add(Box.createHorizontalGlue());
+                retPanel.add(Box.createHorizontalGlue());
                 button = new JButton("REMOVE");
                 button.addActionListener(e -> {
                     if (white) {
@@ -677,18 +674,18 @@ public class ChessUI extends JFrame {
                     } else {
                         blackEngine = null;
                     }
-                    dispose();
-                    new EngineListDialog();
+                    actionPerformed(new ActionEvent(
+                            this, ActionEvent.ACTION_PERFORMED, null));
                 });
-                panel.add(button);
+                retPanel.add(button);
             } else {
                 JComboBox<String> comboBox = new JComboBox<>();
                 comboBox.addItem(" ENGINE ID ");
                 id = 0;
                 while (id++ < engineList.size()) comboBox.addItem("# " + id);
-                panel.add(comboBox);
+                retPanel.add(comboBox);
 
-                panel.add(Box.createHorizontalGlue());
+                retPanel.add(Box.createHorizontalGlue());
                 button = new JButton("   USE   ");
                 button.addActionListener(e -> {
                     int sel = comboBox.getSelectedIndex();
@@ -698,14 +695,48 @@ public class ChessUI extends JFrame {
                         } else {
                             blackEngine = engineList.get(sel - 1);
                         }
-                        dispose();
-                        new EngineListDialog();
+                        actionPerformed(new ActionEvent(
+                                this, ActionEvent.ACTION_PERFORMED, null));
                     }
                 });
-                panel.add(button);
+                retPanel.add(button);
             }
-            panel.add(Box.createHorizontalStrut(5));
-            return panel;
+            retPanel.add(Box.createHorizontalStrut(5));
+
+            return retPanel;
+        }
+
+        private JPanel setNorthPanel() {
+            JPanel retPanel = new JPanel();
+            retPanel.add(Box.createVerticalStrut(25));
+            retPanel.setLayout(new BoxLayout(retPanel, BoxLayout.PAGE_AXIS));
+
+            retPanel.add(selectEnginePanel(true));
+            retPanel.add(Box.createVerticalStrut(5));
+
+            retPanel.add(selectEnginePanel(false));
+            retPanel.add(Box.createVerticalStrut(5));
+
+            retPanel.add(new JSeparator());
+            retPanel.add(Box.createVerticalStrut(25));
+
+            return retPanel;
+        }
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            if (Objects.equals(e.getActionCommand(), UPDATED_ENGINE_LIST)) {
+                remove(centerPanel);
+                centerPanel = setCenterPanel();
+                add(centerPanel, BorderLayout.CENTER);
+                pack();
+            }
+            remove(northPanel);
+            northPanel = setNorthPanel();
+            add(northPanel, BorderLayout.NORTH);
+
+            revalidate();
+            repaint();
         }
     }
 
